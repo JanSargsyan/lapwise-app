@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, Button, FlatList, PermissionsAndroid, Platform, Alert } from 'react-native';
 import { BleManager, Device } from 'react-native-ble-plx';
+import { decode as atob } from 'base-64';
 
 const bleManager = new BleManager();
 
@@ -24,6 +25,7 @@ export default function BLEManager() {
   const [uartMessages, setUartMessages] = useState<string[]>([]);
   const txSubscription = useRef<any>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     return () => {
@@ -35,38 +37,41 @@ export default function BLEManager() {
   }, []);
 
   const requestPermissions = async () => {
-    if (Platform.OS === 'android' && Platform.Version >= 23) {
-      let permissions = [];
-      if (Platform.Version >= 31) {
-        // Android 12+
-        permissions = [
-          PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
-          PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
-          PermissionsAndroid.PERMISSIONS.BLUETOOTH_ADVERTISE,
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-          PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
-        ];
-      } else {
-        // Android < 12
-        permissions = [
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-          PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
-        ];
+    try {
+      if (Platform.OS === 'android' && Platform.Version >= 23) {
+        let permissions = [];
+        if (Platform.Version >= 31) {
+          // Android 12+
+          permissions = [
+            PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+            PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+            PermissionsAndroid.PERMISSIONS.BLUETOOTH_ADVERTISE,
+            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+            PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
+          ];
+        } else {
+          // Android < 12
+          permissions = [
+            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+            PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
+          ];
+        }
+        const granted = await PermissionsAndroid.requestMultiple(permissions);
+        const allGranted = permissions.every((perm) => granted[perm] === PermissionsAndroid.RESULTS.GRANTED);
+        if (!allGranted) {
+          setError('Bluetooth and location permissions are required to scan for devices. Please enable them in your device settings if you previously denied them.');
+          return false;
+        }
       }
-      const granted = await PermissionsAndroid.requestMultiple(permissions);
-      const allGranted = permissions.every((perm) => granted[perm] === PermissionsAndroid.RESULTS.GRANTED);
-      if (!allGranted) {
-        Alert.alert(
-          'Permission required',
-          'Bluetooth and location permissions are required to scan for devices. Please enable them in your device settings if you previously denied them.'
-        );
-        return false;
-      }
+      return true;
+    } catch (e: any) {
+      setError('Error requesting permissions: ' + (e?.message || e?.toString() || 'Unknown error'));
+      return false;
     }
-    return true;
   };
 
   const startScan = async () => {
+    setError(null);
     const hasPermission = await requestPermissions();
     if (!hasPermission) return;
     setDevices([]);
@@ -74,7 +79,7 @@ export default function BLEManager() {
     setIsScanning(true);
     bleManager.startDeviceScan(null, null, (error, device) => {
       if (error) {
-        Alert.alert('Scan error', error.message);
+        setError('Scan error: ' + error.message);
         setIsScanning(false);
         return;
       }
@@ -98,6 +103,7 @@ export default function BLEManager() {
       setConnectedDevice(device);
       setDeviceInfo(null);
       setUartMessages([]);
+      setError(null);
       if (txSubscription.current) {
         txSubscription.current.remove();
         txSubscription.current = null;
@@ -113,11 +119,11 @@ export default function BLEManager() {
         connected.readCharacteristicForService(DEVICE_INFO_SERVICE, MANUFACTURER_CHAR),
       ]);
       setDeviceInfo({
-        model: model?.value ? Buffer.from(model.value, 'base64').toString('utf-8') : '',
-        serial: serial?.value ? Buffer.from(serial.value, 'base64').toString('utf-8') : '',
-        firmware: firmware?.value ? Buffer.from(firmware.value, 'base64').toString('utf-8') : '',
-        hardware: hardware?.value ? Buffer.from(hardware.value, 'base64').toString('utf-8') : '',
-        manufacturer: manufacturer?.value ? Buffer.from(manufacturer.value, 'base64').toString('utf-8') : '',
+        model: model?.value ? atob(model.value) : '',
+        serial: serial?.value ? atob(serial.value) : '',
+        firmware: firmware?.value ? atob(firmware.value) : '',
+        hardware: hardware?.value ? atob(hardware.value) : '',
+        manufacturer: manufacturer?.value ? atob(manufacturer.value) : '',
       });
       // Subscribe to UART TX notifications
       txSubscription.current = connected.monitorCharacteristicForService(
@@ -125,17 +131,35 @@ export default function BLEManager() {
         UART_TX_CHAR,
         (error, characteristic) => {
           if (error) {
-            // Optionally handle error
+            setError('UART notification error: ' + error.message);
             return;
           }
           if (characteristic?.value) {
-            const msg = Buffer.from(characteristic.value, 'base64').toString('utf-8');
+            const msg = atob(characteristic.value);
             setUartMessages((prev) => [...prev, msg]);
           }
         }
       );
     } catch (e: any) {
-      Alert.alert('Connection error', e.message);
+      setError('Connection error: ' + (e?.message || e?.toString() || 'Unknown error'));
+      setConnectedDevice(null);
+      setDeviceInfo(null);
+      setUartMessages([]);
+    }
+  };
+
+  const disconnectFromDevice = async () => {
+    try {
+      if (txSubscription.current) {
+        txSubscription.current.remove();
+        txSubscription.current = null;
+      }
+      if (connectedDevice) {
+        await bleManager.cancelDeviceConnection(connectedDevice.id);
+      }
+    } catch (e: any) {
+      setError('Disconnect error: ' + (e?.message || e?.toString() || 'Unknown error'));
+    } finally {
       setConnectedDevice(null);
       setDeviceInfo(null);
       setUartMessages([]);
@@ -144,6 +168,12 @@ export default function BLEManager() {
 
   return (
     <View style={{ flex: 1, padding: 16 }}>
+      {error && (
+        <View style={{ backgroundColor: '#ffcccc', padding: 10, borderRadius: 6, marginBottom: 10 }}>
+          <Text style={{ color: '#a00', fontWeight: 'bold' }}>{error}</Text>
+          <Button title="Dismiss" onPress={() => setError(null)} />
+        </View>
+      )}
       <Button title={isScanning ? 'Scanning...' : 'Start Scan'} onPress={startScan} disabled={isScanning} />
       <FlatList
         data={devices}
@@ -169,7 +199,10 @@ export default function BLEManager() {
       )}
       {connectedDevice && (
         <View style={{ marginTop: 24, padding: 12, borderWidth: 1, borderColor: '#34a853', borderRadius: 8 }}>
-          <Text style={{ fontWeight: 'bold', marginBottom: 8 }}>UART TX Message{showHistory ? 's' : ''}</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <Text style={{ fontWeight: 'bold' }}>UART TX Message{showHistory ? 's' : ''}</Text>
+            <Button title="Disconnect" color="#a00" onPress={disconnectFromDevice} />
+          </View>
           <View style={{ flexDirection: 'row', marginBottom: 8 }}>
             <Button
               title={showHistory ? 'Show Latest' : 'Show History'}
