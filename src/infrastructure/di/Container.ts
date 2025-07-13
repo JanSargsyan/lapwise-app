@@ -3,15 +3,20 @@ import { IDeviceProtocolService, ProtocolRegistry } from '../../domain/services/
 import { BLEDeviceRepository } from '../ble/BLEDeviceRepository';
 import { MockDeviceRepository } from '../ble/MockDeviceRepository';
 import { CombinedDeviceRepository } from '../ble/CombinedDeviceRepository';
+import { ICacheRepository } from '../caching/ICacheRepository';
+import { AsyncStorageCacheRepository } from '../caching/AsyncStorageCacheRepository';
 
 export class Container {
   private static instance: Container;
   private repositories: Map<string, IDeviceRepository> = new Map();
   private protocolServices: Map<string, IDeviceProtocolService> = new Map();
   private protocolRegistry: ProtocolRegistry;
+  private cacheRepository: ICacheRepository;
+  private dataRecordingUseCases: any; // Will be initialized lazily
 
   private constructor() {
     this.protocolRegistry = new ProtocolRegistryImpl();
+    this.cacheRepository = new AsyncStorageCacheRepository();
     this.initializeServices();
   }
 
@@ -103,6 +108,18 @@ export class Container {
 
   getProtocolRegistry(): ProtocolRegistry {
     return this.protocolRegistry;
+  }
+
+  getCacheRepository(): ICacheRepository {
+    return this.cacheRepository;
+  }
+
+  getDataRecordingUseCases(): any {
+    if (!this.dataRecordingUseCases) {
+      const { DataRecordingUseCases } = require('../../application/use-cases/DataRecordingUseCases');
+      this.dataRecordingUseCases = new DataRecordingUseCases(this.cacheRepository);
+    }
+    return this.dataRecordingUseCases;
   }
 
   getAllRepositories(): Map<string, IDeviceRepository> {

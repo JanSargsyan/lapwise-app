@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Device, DeviceData } from '../../domain/entities/Device';
 import { DeviceUseCases } from '../../application/use-cases/DeviceUseCases';
 import { Container } from '../../infrastructure/di/Container';
+import { useDataRecording } from './useDataRecording';
 
 export interface UseDeviceManagerReturn {
   // State
@@ -36,6 +37,13 @@ export function useDeviceManager(enableRealBLE: boolean = true): UseDeviceManage
   const deviceUseCases = useRef<DeviceUseCases | null>(null);
   const dataCallbacks = useRef<Map<string, (data: DeviceData) => void>>(new Map());
   const repositoryRef = useRef<any>(null);
+
+  // Get data recording hook
+  const { recordDataPoint, isRecording } = useDataRecording();
+  
+  // Store the latest recording functions in refs to avoid stale closures
+  const recordingFunctionsRef = useRef({ recordDataPoint, isRecording });
+  recordingFunctionsRef.current = { recordDataPoint, isRecording };
 
   // Initialize device use cases
   useEffect(() => {
@@ -93,7 +101,17 @@ export function useDeviceManager(enableRealBLE: boolean = true): UseDeviceManage
       
       // Set up data callback
       const dataCallback = (data: DeviceData) => {
+        console.log('🔧 useDeviceManager: Received data for device:', deviceId, 'Data:', data);
         setDeviceData(prev => new Map(prev).set(deviceId, data));
+        
+        // Automatically record data if recording is active for this device
+        const { isRecording, recordDataPoint } = recordingFunctionsRef.current;
+        if (isRecording(deviceId)) {
+          console.log('🔧 useDeviceManager: Recording data for device:', deviceId);
+          recordDataPoint(deviceId, data);
+        } else {
+          console.log('🔧 useDeviceManager: Not recording for device:', deviceId, 'isRecording:', isRecording(deviceId));
+        }
       };
       
       deviceUseCases.current.onDeviceDataReceived(deviceId, dataCallback);

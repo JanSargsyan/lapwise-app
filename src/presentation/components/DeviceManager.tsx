@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Button, FlatList, ScrollView, StyleSheet, Alert } from 'react-native';
 import { useDeviceManager } from '../hooks/useDeviceManager';
+import { useDataRecording } from '../hooks/useDataRecording';
 import { Device, DeviceData } from '../../domain/entities/Device';
 
 export default function DeviceManager() {
@@ -23,6 +24,20 @@ export default function DeviceManager() {
     setEnableRealBLE: setEnableRealBLERepo,
     checkBLEAvailability,
   } = useDeviceManager(enableRealBLE);
+
+  const {
+    dataRuns,
+    activeRuns,
+    isRecording,
+    storageSize,
+    error: recordingError,
+    startRecording,
+    stopRecording,
+    recordDataPoint,
+    deleteDataRun,
+    clearAllData,
+    clearError: clearRecordingError,
+  } = useDataRecording();
 
   // Check BLE availability when component mounts or toggle changes
   useEffect(() => {
@@ -60,19 +75,50 @@ export default function DeviceManager() {
     }
   };
 
+  const handleStartRecording = async (device: Device) => {
+    try {
+      const runName = `${device.info.name} - ${new Date().toLocaleString()}`;
+      await startRecording(device.info.id, device.info.name, runName);
+      Alert.alert('Recording Started', `Started recording data for ${device.info.name}`);
+    } catch (err: any) {
+      Alert.alert('Recording Error', err.message);
+    }
+  };
+
+  const handleStopRecording = async (device: Device) => {
+    try {
+      await stopRecording(device.info.id);
+      Alert.alert('Recording Stopped', `Stopped recording data for ${device.info.name}`);
+    } catch (err: any) {
+      Alert.alert('Recording Error', err.message);
+    }
+  };
+
   const renderDevice = ({ item: device }: { item: Device }) => {
     const connected = isConnected(device.info.id);
     const data = getDeviceData(device.info.id);
     const isMockDevice = device.info.id.startsWith('mock-');
+    const recording = isRecording(device.info.id);
+    
+    // Hide other devices when connected to any device
+    const hasConnectedDevices = connectedDevices.length > 0;
+    const shouldShow = connected || !hasConnectedDevices;
+    
+    if (!shouldShow) {
+      return null;
+    }
 
     return (
-      <View style={styles.deviceItem}>
+      <View style={[styles.deviceItem, recording && styles.recordingDeviceItem]}>
         <View style={styles.deviceHeader}>
           <Text style={styles.deviceName}>{device.info.name}</Text>
           <View style={styles.deviceTypeContainer}>
             <Text style={styles.deviceType}>{device.info.type}</Text>
             {isMockDevice && (
               <Text style={styles.mockBadge}>MOCK</Text>
+            )}
+            {recording && (
+              <Text style={styles.recordingBadge}>🔴 RECORDING</Text>
             )}
           </View>
         </View>
@@ -86,6 +132,9 @@ export default function DeviceManager() {
         {connected && (
           <View style={styles.connectedInfo}>
             <Text style={styles.connectedText}>✓ Connected</Text>
+            {recording && (
+              <Text style={styles.recordingText}>🔴 Recording data...</Text>
+            )}
             {data && (
               <View style={styles.dataInfo}>
                 {data.location && (
@@ -109,18 +158,38 @@ export default function DeviceManager() {
         )}
         
         <View style={styles.deviceActions}>
-          {connected ? (
-            <Button
-              title="Disconnect"
-              onPress={() => handleDisconnect(device)}
-              color="#FF3B30"
-            />
-          ) : (
-            <Button
-              title="Connect"
-              onPress={() => handleConnect(device)}
-              color="#007AFF"
-            />
+          <View style={styles.actionRow}>
+            {connected ? (
+              <Button
+                title="Disconnect"
+                onPress={() => handleDisconnect(device)}
+                color="#FF3B30"
+              />
+            ) : (
+              <Button
+                title="Connect"
+                onPress={() => handleConnect(device)}
+                color="#007AFF"
+              />
+            )}
+          </View>
+          
+          {connected && (
+            <View style={styles.actionRow}>
+              {recording ? (
+                <Button
+                  title="🔴 Stop Recording"
+                  onPress={() => handleStopRecording(device)}
+                  color="#FF9500"
+                />
+              ) : (
+                <Button
+                  title="▶️ Start Recording"
+                  onPress={() => handleStartRecording(device)}
+                  color="#4CAF50"
+                />
+              )}
+            </View>
           )}
         </View>
       </View>
@@ -129,10 +198,16 @@ export default function DeviceManager() {
 
   const renderConnectedDevice = ({ item: device }: { item: Device }) => {
     const data = getDeviceData(device.info.id);
+    const recording = isRecording(device.info.id);
     
     return (
-      <View style={styles.connectedDeviceItem}>
-        <Text style={styles.connectedDeviceName}>{device.info.name}</Text>
+      <View style={[styles.connectedDeviceItem, recording && styles.recordingConnectedDeviceItem]}>
+        <View style={styles.connectedDeviceHeader}>
+          <Text style={styles.connectedDeviceName}>{device.info.name}</Text>
+          {recording && (
+            <Text style={styles.recordingIndicator}>🔴 Recording</Text>
+          )}
+        </View>
         {data && (
           <View style={styles.liveData}>
             {data.location && (
@@ -170,6 +245,13 @@ export default function DeviceManager() {
         </View>
       )}
 
+      {recordingError && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Recording Error: {recordingError}</Text>
+          <Button title="Clear Error" onPress={clearRecordingError} />
+        </View>
+      )}
+
       <View style={styles.controls}>
         <View style={styles.controlRow}>
           <Button
@@ -184,6 +266,23 @@ export default function DeviceManager() {
             title={enableRealBLE ? "ON" : "OFF"}
             onPress={handleToggleRealBLE}
             color={enableRealBLE ? "#4CAF50" : "#999"}
+          />
+        </View>
+        <View style={styles.controlRow}>
+          <Text style={styles.storageInfo}>Storage: {(storageSize / 1024).toFixed(1)} KB</Text>
+          <Button
+            title="Clear All Data"
+            onPress={() => {
+              Alert.alert(
+                'Clear All Data',
+                'Are you sure you want to delete all recorded data?',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Delete', style: 'destructive', onPress: clearAllData },
+                ]
+              );
+            }}
+            color="#FF3B30"
           />
         </View>
         {enableRealBLE && (
@@ -227,6 +326,13 @@ export default function DeviceManager() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Available Devices ({devices.length})</Text>
+        {connectedDevices.length > 0 && (
+          <View style={styles.hiddenDevicesMessage}>
+            <Text style={styles.hiddenDevicesText}>
+              Other devices are hidden while connected to a device. Disconnect to see all devices.
+            </Text>
+          </View>
+        )}
         <FlatList
           data={devices}
           renderItem={renderDevice}
@@ -288,6 +394,11 @@ const styles = StyleSheet.create({
     color: '#333',
     fontWeight: '500',
   },
+  storageInfo: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
+  },
   section: {
     margin: 20,
     backgroundColor: '#fff',
@@ -304,6 +415,11 @@ const styles = StyleSheet.create({
     padding: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+  },
+  recordingDeviceItem: {
+    backgroundColor: '#fde7e7', // Light red background for recording devices
+    borderColor: '#ffcdd2',
+    borderWidth: 1,
   },
   deviceHeader: {
     flexDirection: 'row',
@@ -338,6 +454,20 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     fontWeight: 'bold',
   },
+  recordingBadge: {
+    fontSize: 10,
+    color: '#FF9500',
+    backgroundColor: '#FFFBEB',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 3,
+    fontWeight: 'bold',
+  },
+  recordingText: {
+    color: '#FF9500',
+    fontWeight: '600',
+    marginTop: 5,
+  },
   deviceId: {
     fontSize: 12,
     color: '#666',
@@ -370,17 +500,39 @@ const styles = StyleSheet.create({
   deviceActions: {
     marginTop: 10,
   },
+  actionRow: {
+    marginBottom: 5,
+  },
   connectedDeviceItem: {
     padding: 15,
     backgroundColor: '#f8f9fa',
     borderRadius: 6,
     marginBottom: 10,
   },
+  recordingConnectedDeviceItem: {
+    backgroundColor: '#fde7e7', // Light red background for recording devices
+    borderColor: '#ffcdd2',
+    borderWidth: 1,
+  },
+  connectedDeviceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
   connectedDeviceName: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 10,
+  },
+  recordingIndicator: {
+    fontSize: 12,
+    color: '#FF9500',
+    backgroundColor: '#FFFBEB',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 3,
+    fontWeight: 'bold',
   },
   liveData: {
     backgroundColor: '#fff',
@@ -413,5 +565,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#FF3B30',
     marginTop: 5,
+  },
+  hiddenDevicesMessage: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: '#e0f7fa',
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  hiddenDevicesText: {
+    fontSize: 12,
+    color: '#00796b',
+    fontWeight: '500',
   },
 }); 

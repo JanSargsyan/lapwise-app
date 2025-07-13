@@ -172,6 +172,7 @@ export class MockDeviceRepository implements IDeviceRepository {
 
     const interval = setInterval(() => {
       const mockData = this.generateMockDeviceData(deviceId);
+      console.log('🔧 MockDeviceRepository: Generated mock data for device:', deviceId, 'Data:', mockData);
       this.notifyDataCallbacks(deviceId, mockData);
     }, 1000); // Send data every second
 
