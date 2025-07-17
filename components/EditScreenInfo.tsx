@@ -31,8 +31,8 @@ export default function EditScreenInfo({ path }: { path: string }) {
 
       <View style={styles.helpContainer}>
         <Text style={styles.helpLinkText}>
-          Tap here if your app doesn't automatically update after making changes
-        </Text>
+            Tap here if your app doesn't automatically update after making changes
+          </Text>
       </View>
     </View>
   );

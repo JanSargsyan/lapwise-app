@@ -47,20 +47,6 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="two"
-        options={{
-          title: 'Devices',
-          tabBarIcon: ({ color }) => <TabBarIcon name="bluetooth" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="three"
-        options={{
-          title: 'Data Runs',
-          tabBarIcon: ({ color }) => <TabBarIcon name="database" color={color} />,
-        }}
-      />
     </Tabs>
   );
 }
