@@ -8,10 +8,30 @@
   "license": "MIT",
   "private": false,
   "scripts": {
-    "build": "rm -rf dist && tsc",
-    "test": "jest"
+    "build": "tsc && npm run docs",
+    "test": "jest",
+    "docs": "typedoc --out docs src/index.ts"
   },
   "devDependencies": {
-    "ts-jest": "^29.4.0"
+    "@types/jest": "^30.0.0",
+    "ts-jest": "^29.4.0",
+    "typedoc": "^0.25.7"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./types": {
+      "import": "./dist/types.js",
+      "require": "./dist/types.js",
+      "types": "./dist/types.d.ts"
+    },
+    "./utils": {
+      "import": "./dist/utils-barrel.js",
+      "require": "./dist/utils-barrel.js",
+      "types": "./dist/utils-barrel.d.ts"
+    }
   }
 }

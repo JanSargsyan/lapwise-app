@@ -3,80 +3,45 @@ import { View, Text, Button, StyleSheet, ActivityIndicator, Alert, ScrollView } 
 import { Device as BleDevice } from 'react-native-ble-plx';
 import { BLEManager } from '../src/infrastructure/ble/BLEManager';
 import { RaceBoxApi } from 'racebox-api';
+import type { RaceBoxLiveData } from 'racebox-api/types';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 
 const bleManager = new BLEManager();
 
-function renderLiveData(liveData: any) {
+function renderLiveData(liveData: RaceBoxLiveData | null) {
   if (!liveData) return <Text>No live data yet.</Text>;
 
-  // Example grouping: GPS, Speed, Battery, Acceleration, etc.
-  const gps = liveData.gps || {};
-  const speed = liveData.speed;
-  const battery = liveData.battery;
-  const acceleration = liveData.acceleration || {};
-  const gForce = liveData.gForce;
-  const satellites = liveData.satellites;
-  const heading = liveData.heading;
-  const altitude = liveData.altitude;
-  const timestamp = liveData.timestamp;
-
+  // Map fields from RaceBoxLiveData
   return (
     <View style={styles.liveCard}>
-      {timestamp && (
-        <Text style={styles.liveSectionTitle}>Timestamp: <Text style={styles.liveValue}>{new Date(timestamp).toLocaleString()}</Text></Text>
-      )}
-      {(gps.latitude || gps.longitude || altitude) && (
-        <View style={styles.liveSection}>
-          <Text style={styles.liveSectionTitle}>GPS</Text>
-          {gps.latitude !== undefined && <Text style={styles.liveLabel}>Latitude: <Text style={styles.liveValue}>{gps.latitude}</Text></Text>}
-          {gps.longitude !== undefined && <Text style={styles.liveLabel}>Longitude: <Text style={styles.liveValue}>{gps.longitude}</Text></Text>}
-          {altitude !== undefined && <Text style={styles.liveLabel}>Altitude: <Text style={styles.liveValue}>{altitude} m</Text></Text>}
-          {satellites !== undefined && <Text style={styles.liveLabel}>Satellites: <Text style={styles.liveValue}>{satellites}</Text></Text>}
-        </View>
-      )}
-      {speed !== undefined && (
-        <View style={styles.liveSection}>
-          <Text style={styles.liveSectionTitle}>Speed</Text>
-          <Text style={styles.liveLabel}>Speed: <Text style={styles.liveValue}>{speed} km/h</Text></Text>
-        </View>
-      )}
-      {heading !== undefined && (
-        <View style={styles.liveSection}>
-          <Text style={styles.liveSectionTitle}>Heading</Text>
-          <Text style={styles.liveLabel}>Heading: <Text style={styles.liveValue}>{heading}°</Text></Text>
-        </View>
-      )}
-      {(acceleration.x !== undefined || acceleration.y !== undefined || acceleration.z !== undefined) && (
-        <View style={styles.liveSection}>
-          <Text style={styles.liveSectionTitle}>Acceleration</Text>
-          {acceleration.x !== undefined && <Text style={styles.liveLabel}>X: <Text style={styles.liveValue}>{acceleration.x} m/s²</Text></Text>}
-          {acceleration.y !== undefined && <Text style={styles.liveLabel}>Y: <Text style={styles.liveValue}>{acceleration.y} m/s²</Text></Text>}
-          {acceleration.z !== undefined && <Text style={styles.liveLabel}>Z: <Text style={styles.liveValue}>{acceleration.z} m/s²</Text></Text>}
-        </View>
-      )}
-      {gForce !== undefined && (
-        <View style={styles.liveSection}>
-          <Text style={styles.liveSectionTitle}>G-Force</Text>
-          <Text style={styles.liveLabel}>G: <Text style={styles.liveValue}>{gForce} g</Text></Text>
-        </View>
-      )}
-      {battery !== undefined && (
-        <View style={styles.liveSection}>
-          <Text style={styles.liveSectionTitle}>Battery</Text>
-          <Text style={styles.liveLabel}>Battery: <Text style={styles.liveValue}>{battery} %</Text></Text>
-        </View>
-      )}
-      {/* Fallback: show any other fields not covered above */}
       <View style={styles.liveSection}>
-        {Object.entries(liveData).map(([key, value]) => {
-          if ([
-            'gps', 'speed', 'battery', 'acceleration', 'gForce', 'satellites', 'heading', 'altitude', 'timestamp'
-          ].includes(key)) return null;
-          return (
-            <Text style={styles.liveLabel} key={key}>{key}: <Text style={styles.liveValue}>{JSON.stringify(value)}</Text></Text>
-          );
-        })}
+        <Text style={styles.liveSectionTitle}>GPS</Text>
+        <Text style={styles.liveLabel}>Latitude: <Text style={styles.liveValue}>{liveData.latitude}</Text></Text>
+        <Text style={styles.liveLabel}>Longitude: <Text style={styles.liveValue}>{liveData.longitude}</Text></Text>
+        <Text style={styles.liveLabel}>WGS Altitude: <Text style={styles.liveValue}>{liveData.wgsAltitude} m</Text></Text>
+        <Text style={styles.liveLabel}>MSL Altitude: <Text style={styles.liveValue}>{liveData.mslAltitude} m</Text></Text>
+        <Text style={styles.liveLabel}>Satellites: <Text style={styles.liveValue}>{liveData.numSV}</Text></Text>
+      </View>
+      <View style={styles.liveSection}>
+        <Text style={styles.liveSectionTitle}>Speed & Heading</Text>
+        <Text style={styles.liveLabel}>Speed: <Text style={styles.liveValue}>{liveData.speed} km/h</Text></Text>
+        <Text style={styles.liveLabel}>Heading: <Text style={styles.liveValue}>{liveData.heading}°</Text></Text>
+      </View>
+      <View style={styles.liveSection}>
+        <Text style={styles.liveSectionTitle}>G-Force</Text>
+        <Text style={styles.liveLabel}>X: <Text style={styles.liveValue}>{liveData.gForceX}</Text></Text>
+        <Text style={styles.liveLabel}>Y: <Text style={styles.liveValue}>{liveData.gForceY}</Text></Text>
+        <Text style={styles.liveLabel}>Z: <Text style={styles.liveValue}>{liveData.gForceZ}</Text></Text>
+      </View>
+      <View style={styles.liveSection}>
+        <Text style={styles.liveSectionTitle}>Rotation Rate</Text>
+        <Text style={styles.liveLabel}>X: <Text style={styles.liveValue}>{liveData.rotationRateX}</Text></Text>
+        <Text style={styles.liveLabel}>Y: <Text style={styles.liveValue}>{liveData.rotationRateY}</Text></Text>
+        <Text style={styles.liveLabel}>Z: <Text style={styles.liveValue}>{liveData.rotationRateZ}</Text></Text>
+      </View>
+      <View style={styles.liveSection}>
+        <Text style={styles.liveSectionTitle}>Battery/Voltage</Text>
+        <Text style={styles.liveLabel}>Value: <Text style={styles.liveValue}>{liveData.batteryOrVoltage}</Text></Text>
       </View>
     </View>
   );
@@ -86,8 +51,16 @@ export default function DevicePage() {
   const { deviceId } = useLocalSearchParams();
   const navigation = useNavigation();
   const [device, setDevice] = useState<BleDevice | null>(null);
-  const [info, setInfo] = useState<any>(null);
-  const [liveData, setLiveData] = useState<any>(null);
+  const [info, setInfo] = useState<
+    | {
+        model?: string;
+        serial?: string;
+        firmware?: string;
+        hardware?: string;
+        manufacturer?: string;
+      }
+    | null>(null);
+  const [liveData, setLiveData] = useState<RaceBoxLiveData | null>(null);
   const [loading, setLoading] = useState(true);
   const unsubscribeRef = useRef<() => void>();
 
@@ -112,8 +85,6 @@ export default function DevicePage() {
             if (!isConnected) {
               connected = await found.connect();
             }
-          } else if (found.isConnected === false) {
-            connected = await found.connect();
           }
           // Discover services and characteristics
           if (typeof connected.discoverAllServicesAndCharacteristics === 'function') {
@@ -124,9 +95,11 @@ export default function DevicePage() {
           const data = await api.readDeviceInfo();
           setInfo(data);
           // Subscribe to live data
-          unsubscribeRef.current = api.subscribeLiveData((live: any) => {
-            setLiveData(live);
-          });
+          if (api && typeof api.subscribeLiveData === 'function') {
+            unsubscribeRef.current = api.subscribeLiveData((live: RaceBoxLiveData) => {
+              setLiveData(live);
+            });
+          }
         } else {
           setInfo(null);
         }
@@ -138,7 +111,9 @@ export default function DevicePage() {
     }
     fetchDevice();
     return () => {
-      if (unsubscribeRef.current) unsubscribeRef.current();
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+      }
     };
   }, [deviceId]);
 
@@ -161,11 +136,11 @@ export default function DevicePage() {
         <ActivityIndicator size="large" color="#023c69" />
       ) : info ? (
         <View style={styles.infoBox}>
-          <Text>ID: {info.id}</Text>
-          <Text>Name: {info.name}</Text>
-          <Text>Firmware: {info.firmwareVersion}</Text>
-          <Text>Hardware: {info.hardwareVersion}</Text>
-          <Text>Serial: {info.serialNumber}</Text>
+          <Text>Model: {info.model}</Text>
+          <Text>Firmware: {info.firmware}</Text>
+          <Text>Hardware: {info.hardware}</Text>
+          <Text>Serial: {info.serial}</Text>
+          <Text>Manufacturer: {info.manufacturer}</Text>
         </View>
       ) : (
         <Text>No info available.</Text>
