@@ -1,0 +1,10 @@
+{
+  "name": "racebox-api",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "description": "API and types for RaceBox device integration.",
+  "author": "",
+  "license": "MIT",
+  "private": false
+} 
