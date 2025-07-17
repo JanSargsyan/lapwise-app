@@ -27,7 +27,7 @@ export class BLEManager {
               }
             }
           });
-          // Stop scan after 5 seconds and connect
+          // Stop scan after 10 seconds and connect
           setTimeout(async () => {
             this.manager.stopDeviceScan();
             subscription.remove();
@@ -41,9 +41,18 @@ export class BLEManager {
             } else {
               resolve(null);
             }
-          }, 5000);
+          }, 10000);
         }
       }, true);
     });
+  }
+
+  async getDeviceById(id: string): Promise<Device | null> {
+    try {
+      const device = await this.manager.devices([id]);
+      return device && device.length > 0 ? device[0] : null;
+    } catch {
+      return null;
+    }
   }
 } 

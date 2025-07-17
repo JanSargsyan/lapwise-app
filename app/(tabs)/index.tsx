@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, Button, ActivityIndicator, Alert } from 'react-
 import { Picker } from '@react-native-picker/picker';
 import { BLEManager } from '../../src/infrastructure/ble/BLEManager';
 import { DeviceUseCases } from '../../src/application/use-cases/DeviceUseCases';
+import { useRouter } from 'expo-router';
 
 const bleManager = new BLEManager();
 const deviceUseCases = new DeviceUseCases(bleManager);
@@ -10,6 +11,7 @@ const deviceUseCases = new DeviceUseCases(bleManager);
 export default function HomeScreen() {
   const [selectedDevice, setSelectedDevice] = useState('RaceBox');
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const handleConnect = async () => {
     if (selectedDevice === 'RaceBox') {
@@ -18,7 +20,7 @@ export default function HomeScreen() {
         const device = await deviceUseCases.connectToClosestRaceBox();
         setLoading(false);
         if (device) {
-          Alert.alert('Connected', `Connected to ${device.name}`);
+          router.push({ pathname: '/DevicePage', params: { deviceId: device.id } });
         } else {
           Alert.alert('Not found', 'No RaceBox device found nearby.');
         }
