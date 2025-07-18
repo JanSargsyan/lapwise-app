@@ -2,46 +2,47 @@ import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, Button, StyleSheet, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { Device as BleDevice } from 'react-native-ble-plx';
 import { BLEManager } from '../src/infrastructure/ble/BLEManager';
-import { RaceBoxApi } from 'racebox-api';
-import type { RaceBoxLiveData } from 'racebox-api/types';
+import { DeviceUseCases } from '../src/application/use-cases/DeviceUseCases';
+import type { DeviceData } from '../src/domain/model/DeviceData';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 
 const bleManager = new BLEManager();
+const deviceUseCases = new DeviceUseCases(bleManager);
 
-function renderLiveData(liveData: RaceBoxLiveData | null) {
+function renderLiveData(liveData: DeviceData | null) {
   if (!liveData) return <Text>No live data yet.</Text>;
 
-  // Map fields from RaceBoxLiveData
+  // Map fields from DeviceData submodels
   return (
     <View style={styles.liveCard}>
       <View style={styles.liveSection}>
         <Text style={styles.liveSectionTitle}>GPS</Text>
-        <Text style={styles.liveLabel}>Latitude: <Text style={styles.liveValue}>{liveData.latitude}</Text></Text>
-        <Text style={styles.liveLabel}>Longitude: <Text style={styles.liveValue}>{liveData.longitude}</Text></Text>
-        <Text style={styles.liveLabel}>WGS Altitude: <Text style={styles.liveValue}>{liveData.wgsAltitude} m</Text></Text>
-        <Text style={styles.liveLabel}>MSL Altitude: <Text style={styles.liveValue}>{liveData.mslAltitude} m</Text></Text>
-        <Text style={styles.liveLabel}>Satellites: <Text style={styles.liveValue}>{liveData.numSV}</Text></Text>
+        <Text style={styles.liveLabel}>Latitude: <Text style={styles.liveValue}>{liveData.location.latitude}</Text></Text>
+        <Text style={styles.liveLabel}>Longitude: <Text style={styles.liveValue}>{liveData.location.longitude}</Text></Text>
+        <Text style={styles.liveLabel}>WGS Altitude: <Text style={styles.liveValue}>{liveData.location.wgsAltitude} m</Text></Text>
+        <Text style={styles.liveLabel}>MSL Altitude: <Text style={styles.liveValue}>{liveData.location.mslAltitude} m</Text></Text>
+        <Text style={styles.liveLabel}>Satellites: <Text style={styles.liveValue}>{liveData.location.numSV}</Text></Text>
       </View>
       <View style={styles.liveSection}>
         <Text style={styles.liveSectionTitle}>Speed & Heading</Text>
-        <Text style={styles.liveLabel}>Speed: <Text style={styles.liveValue}>{liveData.speed} km/h</Text></Text>
-        <Text style={styles.liveLabel}>Heading: <Text style={styles.liveValue}>{liveData.heading}°</Text></Text>
+        <Text style={styles.liveLabel}>Speed: <Text style={styles.liveValue}>{liveData.location.speed} km/h</Text></Text>
+        <Text style={styles.liveLabel}>Heading: <Text style={styles.liveValue}>{liveData.location.heading}°</Text></Text>
       </View>
       <View style={styles.liveSection}>
         <Text style={styles.liveSectionTitle}>G-Force</Text>
-        <Text style={styles.liveLabel}>X: <Text style={styles.liveValue}>{liveData.gForceX}</Text></Text>
-        <Text style={styles.liveLabel}>Y: <Text style={styles.liveValue}>{liveData.gForceY}</Text></Text>
-        <Text style={styles.liveLabel}>Z: <Text style={styles.liveValue}>{liveData.gForceZ}</Text></Text>
+        <Text style={styles.liveLabel}>X: <Text style={styles.liveValue}>{liveData.motion.gForceX}</Text></Text>
+        <Text style={styles.liveLabel}>Y: <Text style={styles.liveValue}>{liveData.motion.gForceY}</Text></Text>
+        <Text style={styles.liveLabel}>Z: <Text style={styles.liveValue}>{liveData.motion.gForceZ}</Text></Text>
       </View>
       <View style={styles.liveSection}>
         <Text style={styles.liveSectionTitle}>Rotation Rate</Text>
-        <Text style={styles.liveLabel}>X: <Text style={styles.liveValue}>{liveData.rotationRateX}</Text></Text>
-        <Text style={styles.liveLabel}>Y: <Text style={styles.liveValue}>{liveData.rotationRateY}</Text></Text>
-        <Text style={styles.liveLabel}>Z: <Text style={styles.liveValue}>{liveData.rotationRateZ}</Text></Text>
+        <Text style={styles.liveLabel}>X: <Text style={styles.liveValue}>{liveData.motion.rotationRateX}</Text></Text>
+        <Text style={styles.liveLabel}>Y: <Text style={styles.liveValue}>{liveData.motion.rotationRateY}</Text></Text>
+        <Text style={styles.liveLabel}>Z: <Text style={styles.liveValue}>{liveData.motion.rotationRateZ}</Text></Text>
       </View>
       <View style={styles.liveSection}>
         <Text style={styles.liveSectionTitle}>Battery/Voltage</Text>
-        <Text style={styles.liveLabel}>Value: <Text style={styles.liveValue}>{liveData.batteryOrVoltage}</Text></Text>
+        <Text style={styles.liveLabel}>Value: <Text style={styles.liveValue}>{liveData.sensors.batteryOrVoltage}</Text></Text>
       </View>
     </View>
   );
@@ -60,12 +61,11 @@ export default function DevicePage() {
         manufacturer?: string;
       }
     | null>(null);
-  const [liveData, setLiveData] = useState<RaceBoxLiveData | null>(null);
+  const [liveData, setLiveData] = useState<DeviceData | null>(null);
   const [loading, setLoading] = useState(true);
   const unsubscribeRef = useRef<() => void>();
 
   useEffect(() => {
-    let api: RaceBoxApi | null = null;
     async function fetchDevice() {
       setLoading(true);
       try {
@@ -90,16 +90,10 @@ export default function DevicePage() {
           if (typeof connected.discoverAllServicesAndCharacteristics === 'function') {
             connected = await connected.discoverAllServicesAndCharacteristics();
           }
-          // Now use RaceBoxApi
-          api = new RaceBoxApi(connected);
-          const data = await api.readDeviceInfo();
-          setInfo(data);
-          // Subscribe to live data
-          if (api && typeof api.subscribeLiveData === 'function') {
-            unsubscribeRef.current = api.subscribeLiveData((live: RaceBoxLiveData) => {
-              setLiveData(live);
-            });
-          }
+          // Read device info (optional, not part of live data)
+          // You may want to move this to a use case as well
+          // Now subscribe to live data using the use case
+          unsubscribeRef.current = await deviceUseCases.subscribeToLiveData(deviceId as string, setLiveData);
         } else {
           setInfo(null);
         }
