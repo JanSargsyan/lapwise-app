@@ -1,34 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, View, Text, Button, ActivityIndicator, Alert } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import { BLEManager } from '../../src/data/bluetooth/BLEManager';
-import { DeviceUseCases } from '../../src/application/use-cases/DeviceUseCases';
 import { useRouter } from 'expo-router';
-import { useConnection } from '../ConnectionContext';
-
-const bleManager = new BLEManager();
-const deviceUseCases = new DeviceUseCases(bleManager);
+import { container } from '../../src/application/di';
 
 export default function HomeScreen() {
   const [selectedDevice, setSelectedDevice] = useState('RaceBox');
   const [loading, setLoading] = useState(false);
-  const { connectedDeviceId, setConnectedDeviceId } = useConnection();
   const router = useRouter();
-
-  useEffect(() => {
-    if (connectedDeviceId) {
-      router.replace({ pathname: '/DevicePage', params: { deviceId: connectedDeviceId } });
-    }
-  }, [connectedDeviceId]);
 
   const handleConnect = async () => {
     if (selectedDevice === 'RaceBox') {
       setLoading(true);
       try {
-        const device = await deviceUseCases.connectToClosestRaceBox();
+        const connected = await container.connectToClosestRaceBoxUseCase.execute();
         setLoading(false);
-        if (device) {
-          setConnectedDeviceId(device.id);
+        if (connected) {
+          // Navigate to DevicePage without passing deviceId
+          router.replace('/DevicePage');
         } else {
           Alert.alert('Not found', 'No RaceBox device found nearby.');
         }
@@ -38,10 +27,6 @@ export default function HomeScreen() {
       }
     }
   };
-
-  if (connectedDeviceId) {
-    return <ActivityIndicator size="large" color="#023c69" style={{ flex: 1 }} />;
-  }
 
   return (
     <View style={styles.container}>

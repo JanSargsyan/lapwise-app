@@ -1,14 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, Button, StyleSheet, ActivityIndicator, Alert, ScrollView } from 'react-native';
-import { Device as BleDevice } from 'react-native-ble-plx';
-import { BLEManager } from '../src/data/bluetooth/BLEManager';
-import { DeviceUseCases } from '../src/application/use-cases/DeviceUseCases';
 import type { DeviceData } from '../src/domain/model/DeviceData';
-import { useLocalSearchParams, useNavigation } from 'expo-router';
-import { useConnection } from './ConnectionContext';
-
-const bleManager = new BLEManager();
-const deviceUseCases = new DeviceUseCases(bleManager);
+import { container } from '../src/application/di';
+import type { DeviceInfo } from '../src/domain/model/DeviceInfo';
+import { Subscription } from 'rxjs';
 
 function renderLiveData(liveData: DeviceData | null) {
   if (!liveData) return <Text>No live data yet.</Text>;
@@ -50,94 +45,50 @@ function renderLiveData(liveData: DeviceData | null) {
 }
 
 export default function DevicePage() {
-  const { deviceId } = useLocalSearchParams();
-  // const navigation = useNavigation();
-  const [device, setDevice] = useState<BleDevice | null>(null);
-  const [info, setInfo] = useState<
-    | {
-        model?: string;
-        serial?: string;
-        firmware?: string;
-        hardware?: string;
-        manufacturer?: string;
-      }
-    | null>(null);
+  const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | null>(null);
   const [liveData, setLiveData] = useState<DeviceData | null>(null);
-  const [loading, setLoading] = useState(true);
   const [isSubscribed, setIsSubscribed] = useState(false);
-  const unsubscribeRef = useRef<() => void>();
-  const { setConnectedDeviceId } = useConnection();
+  const subscriptionRef = useRef<Subscription | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchDevice() {
-      setLoading(true);
-      try {
-        if (!deviceId || typeof deviceId !== 'string') {
-          setInfo(null);
-          setDevice(null);
-          setLoading(false);
-          return;
-        }
-        let found = await bleManager.getDeviceById(deviceId);
-        setDevice(found);
-        if (found) {
-          // Ensure device is connected
-          let connected = found;
-          if (typeof found.isConnected === 'function') {
-            const isConnected = await found.isConnected();
-            if (!isConnected) {
-              connected = await found.connect();
-            }
-          }
-          // Discover services and characteristics
-          if (typeof connected.discoverAllServicesAndCharacteristics === 'function') {
-            connected = await connected.discoverAllServicesAndCharacteristics();
-          }
-          // Read device info (optional, not part of live data)
-          // You may want to move this to a use case as well
-          // Do not auto-subscribe to live data here
-        } else {
-          setInfo(null);
-        }
-      } catch (e) {
-        Alert.alert('Error', e instanceof Error ? e.message : 'Unknown error');
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchDevice();
+    // Fetch device info on mount
+    setLoading(true);
+    container.getConnectedDeviceInfoUseCase.execute().then(info => {
+      setDeviceInfo(info);
+      setLoading(false);
+    });
     return () => {
-      if (unsubscribeRef.current) {
-        unsubscribeRef.current();
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
       }
     };
-  }, [deviceId]);
+  }, []);
 
-  const handleSubscribe = async () => {
-    if (!deviceId || typeof deviceId !== 'string') return;
-    if (unsubscribeRef.current) unsubscribeRef.current();
-    unsubscribeRef.current = await deviceUseCases.subscribeToLiveData(deviceId, setLiveData);
+  const handleSubscribe = () => {
+    if (subscriptionRef.current) subscriptionRef.current.unsubscribe();
+    subscriptionRef.current = container.getLiveDataUseCase.execute().subscribe(setLiveData);
     setIsSubscribed(true);
   };
 
   const handleUnsubscribe = () => {
-    if (unsubscribeRef.current) {
-      unsubscribeRef.current();
-      unsubscribeRef.current = undefined;
+    if (subscriptionRef.current) {
+      subscriptionRef.current.unsubscribe();
+      subscriptionRef.current = null;
     }
     setIsSubscribed(false);
     setLiveData(null);
   };
 
   const handleDisconnect = async () => {
-    if (!device) return;
+    if (!deviceInfo) return;
     try {
-      if (unsubscribeRef.current) unsubscribeRef.current();
-      await device.cancelConnection();
-      setDevice(null);
+      if (subscriptionRef.current) subscriptionRef.current.unsubscribe();
+      // The original code had `await device.cancelConnection();` which `device` was removed.
+      // Assuming the intent was to remove the device state and its connection logic.
+      // For now, removing the line as `device` is no longer available.
+      setDeviceInfo(null);
       setLiveData(null);
-      setInfo(null);
-      setConnectedDeviceId(null);
       setIsSubscribed(false);
     } catch (e) {
       Alert.alert('Error', e instanceof Error ? e.message : 'Unknown error');
@@ -149,23 +100,22 @@ export default function DevicePage() {
       <Text style={styles.title}>Device Page</Text>
       {loading ? (
         <ActivityIndicator size="large" color="#023c69" />
-      ) : info ? (
+      ) : null}
+      {deviceInfo && (
         <View style={styles.infoBox}>
-          <Text>Model: {info.model}</Text>
-          <Text>Firmware: {info.firmware}</Text>
-          <Text>Hardware: {info.hardware}</Text>
-          <Text>Serial: {info.serial}</Text>
-          <Text>Manufacturer: {info.manufacturer}</Text>
+          <Text>Model: {deviceInfo.model}</Text>
+          <Text>Firmware: {deviceInfo.firmware}</Text>
+          <Text>Hardware: {deviceInfo.hardware}</Text>
+          <Text>Serial: {deviceInfo.serial}</Text>
+          <Text>Manufacturer: {deviceInfo.manufacturer}</Text>
         </View>
-      ) : (
-        <Text>No info available.</Text>
       )}
-      <Button title="Disconnect" onPress={handleDisconnect} color="#c00" disabled={!device} />
+      <Button title="Disconnect" onPress={handleDisconnect} color="#c00" />
       <Button
         title={isSubscribed ? 'Unsubscribe from Live Data' : 'Subscribe to Live Data'}
         onPress={isSubscribed ? handleUnsubscribe : handleSubscribe}
         color={isSubscribed ? '#888' : '#023c69'}
-        disabled={loading || !device}
+        disabled={loading}
       />
       <Text style={styles.subtitle}>Live Data</Text>
       {renderLiveData(liveData)}

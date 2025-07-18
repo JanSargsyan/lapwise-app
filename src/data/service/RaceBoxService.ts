@@ -1,18 +1,16 @@
-import { ApplicationGraph } from '@/src/application/di';
-import { BLEManager } from '../bluetooth/BLEManager';
+import { BLERespository } from '@/src/domain/repository/BLERespository';
 import { Device as BleDevice } from 'react-native-ble-plx';
-import { injectable, inject } from 'react-obsidian';
 
-@injectable(ApplicationGraph)
 export class RaceBoxService {
   constructor(
-    @inject('BLEManager') private bleManager: BLEManager
+    private bleRepository: BLERespository
   ) {}
 
   // TODO: Add device validation, check if device is a RaceBox
+  // TODO: Redundant - can be done in a generic way.
 
-  async getConnectedDevice(deviceId: string): Promise<BleDevice> {
-    const found = await this.bleManager.getDeviceById(deviceId);
+  async getConnectedDevice(): Promise<BleDevice> {
+    const found = await this.bleRepository.getDevice();
     if (!found) throw new Error('Device not found');
     let connected = found;
     if (typeof found.isConnected === 'function') {
@@ -28,15 +26,15 @@ export class RaceBoxService {
     return connected;
   }
 
-  async disconnectDevice(deviceId: string): Promise<void> {
-    const found = await this.bleManager.getDeviceById(deviceId);
+  async disconnectDevice(): Promise<void> {
+    const found = await this.bleRepository.getDevice();
     if (found) {
       await found.cancelConnection();
     }
   }
 
-  async isDeviceConnected(deviceId: string): Promise<boolean> {
-    const found = await this.bleManager.getDeviceById(deviceId);
+  async isDeviceConnected(): Promise<boolean> {
+    const found = await this.bleRepository.getDevice();
     if (!found) return false;
     if (typeof found.isConnected === 'function') {
       return found.isConnected();

@@ -36,7 +36,6 @@
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
     "react-native-web": "~0.20.0",
-    "react-obsidian": "^2.23.0",
     "rxjs": "^7.8.2"
   },
   "devDependencies": {

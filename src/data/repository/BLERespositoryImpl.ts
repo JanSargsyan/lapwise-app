@@ -1,16 +1,16 @@
 import { BleManager, Device } from 'react-native-ble-plx';
-import { injectable, inject } from 'react-obsidian';
-import { ApplicationGraph } from '@/src/application/di';
+import type { BLERespository } from '../../domain/repository/BLERespository';
+import type { DeviceStorageRepository } from '../../domain/repository/DeviceStorageRepository';
 
-@injectable(ApplicationGraph)
-export class BLEManager {
-
+export class BLERespositoryImpl implements BLERespository {
   constructor(
-    @inject('BleManager') private manager: BleManager
+    private manager: BleManager,
+    private deviceStorageRepository: DeviceStorageRepository
   ) {}
-  
 
-  async scanAndConnectToClosestRaceBox(): Promise<Device | null> {
+  // TODO: Make generic
+
+  async scanAndConnectToClosestRaceBox(): Promise<boolean> {
     return new Promise((resolve, reject) => {
       let closestDevice: Device | null = null;
       let strongestRssi = -Infinity;
@@ -37,12 +37,13 @@ export class BLEManager {
             if (closestDevice) {
               try {
                 const connected = await closestDevice.connect();
-                resolve(connected);
+                await this.deviceStorageRepository.saveConnectedDeviceId(connected.id);
+                resolve(true);
               } catch (e) {
                 reject(e);
               }
             } else {
-              resolve(null);
+              resolve(false);
             }
           }, 10000);
         }
@@ -50,7 +51,9 @@ export class BLEManager {
     });
   }
 
-  async getDeviceById(id: string): Promise<Device | null> {
+  async getDevice(): Promise<Device | null> {
+    const id = await this.deviceStorageRepository.getConnectedDeviceId();
+    if (!id) return null;
     try {
       const device = await this.manager.devices([id]);
       return device && device.length > 0 ? device[0] : null;

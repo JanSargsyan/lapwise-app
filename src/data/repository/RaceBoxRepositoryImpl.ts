@@ -5,44 +5,43 @@ import type { DeviceData } from '../../domain/model/DeviceData';
 import type { RaceBoxRepository } from '../../domain/repository/RaceBoxRepository';
 import { Observable } from 'rxjs';
 import { RaceBoxService } from '../service/RaceBoxService';
-import { ApplicationGraph } from '@/src/application/di';
-import { injectable, inject } from 'react-obsidian';
+import { DeviceRepository } from '@/src/domain/repository/DeviceRepository';
+import { DeviceInfo } from '@/src/domain/model/DeviceInfo';
 
-@injectable(ApplicationGraph)
-export class RaceBoxRepositoryImpl implements RaceBoxRepository {
-  constructor(@inject("RaceBoxService") private raceBoxService: RaceBoxService) {}
+export class RaceBoxRepositoryImpl implements RaceBoxRepository, DeviceRepository{
+  constructor(private raceBoxService: RaceBoxService) {}
 
-  private async getApi(deviceId: string): Promise<RaceBoxApi> {
-    const connected = await this.raceBoxService.getConnectedDevice(deviceId);
+  private async getApi(): Promise<RaceBoxApi> {
+    const connected = await this.raceBoxService.getConnectedDevice();
     return new RaceBoxApi(connected);
   }
 
-  async readRecordingConfig(deviceId: string): Promise<RecordingConfigPayload | null> {
-    const api = await this.getApi(deviceId);
+  async readRecordingConfig(): Promise<RecordingConfigPayload | null> {
+    const api = await this.getApi();
     return api.readRecordingConfig();
   }
 
-  async setRecordingConfig(deviceId: string, config: RecordingConfigPayload): Promise<AckNackPayload | null> {
-    const api = await this.getApi(deviceId);
+  async setRecordingConfig(config: RecordingConfigPayload): Promise<AckNackPayload | null> {
+    const api = await this.getApi();
     return api.setRecordingConfig(config);
   }
 
-  async startRecording(deviceId: string): Promise<AckNackPayload | null> {
-    const api = await this.getApi(deviceId);
+  async startRecording(): Promise<AckNackPayload | null> {
+    const api = await this.getApi();
     return api.startRecording();
   }
 
-  async stopRecording(deviceId: string): Promise<AckNackPayload | null> {
-    const api = await this.getApi(deviceId);
+  async stopRecording(): Promise<AckNackPayload | null> {
+    const api = await this.getApi();
     return api.stopRecording();
   }
 
-  subscribeLiveData(deviceId: string): Observable<DeviceData> {
+  subscribeLiveData(): Observable<DeviceData> {
     return new Observable<DeviceData>(subscriber => {
       let unsub: (() => void) | undefined;
       (async () => {
         try {
-          const api = await this.getApi(deviceId);
+          const api = await this.getApi();
           unsub = api.subscribeLiveData((live: RaceBoxLiveData) => {
             subscriber.next(mapRaceBoxLiveDataToDeviceData(live));
           });
@@ -56,9 +55,18 @@ export class RaceBoxRepositoryImpl implements RaceBoxRepository {
     });
   }
 
-  async readDeviceInfo(deviceId: string): Promise<any> {
-    const api = await this.getApi(deviceId);
-    return api.readDeviceInfo();
+  async readDeviceInfo(): Promise<DeviceInfo> {
+    const api = await this.getApi();
+
+    const deviceInfo = await api.readDeviceInfo();
+
+    return {
+      model: deviceInfo?.model ?? "",
+      serial: deviceInfo?.serial ?? "",
+      firmware: deviceInfo?.firmware ?? "",
+      hardware: deviceInfo?.hardware ?? "",
+      manufacturer: deviceInfo?.manufacturer ?? ""  
+    }
   }
 
   async getRecordingStatus(deviceId: string): Promise<RecordingStatusPayload | null> {
