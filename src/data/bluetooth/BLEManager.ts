@@ -1,11 +1,14 @@
 import { BleManager, Device } from 'react-native-ble-plx';
+import { injectable, inject } from 'react-obsidian';
+import { ApplicationGraph } from '@/src/application/di';
 
+@injectable(ApplicationGraph)
 export class BLEManager {
-  private manager: BleManager;
 
-  constructor() {
-    this.manager = new BleManager();
-  }
+  constructor(
+    @inject('BleManager') private manager: BleManager
+  ) {}
+  
 
   async scanAndConnectToClosestRaceBox(): Promise<Device | null> {
     return new Promise((resolve, reject) => {

@@ -5,13 +5,13 @@ import type { RaceBoxLiveData } from 'racebox-api/types';
 import { mapRaceBoxLiveDataToDeviceData } from '../../data/mapper/LiveDataMapper';
 import type { DeviceData } from '../../domain/model/DeviceData';
 import { Observable } from 'rxjs';
+import { injectable, inject } from 'react-obsidian';
+import { ApplicationGraph } from '../di';
 
+@injectable(ApplicationGraph)
 export class DeviceUseCases {
-  private bleManager: BLEManager;
 
-  constructor(bleManager: BLEManager) {
-    this.bleManager = bleManager;
-  }
+  constructor(@inject('BLEManager') private bleManager: BLEManager){}
 
   async connectToClosestRaceBox(): Promise<BleDevice | null> {
     return this.bleManager.scanAndConnectToClosestRaceBox();

@@ -2,13 +2,17 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    "target": "ES2022",
     "paths": {
       "@/*": [
         "./*"
       ]
     },
     "jsx": "react-native",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false
   },
   "include": [
     "**/*.ts",

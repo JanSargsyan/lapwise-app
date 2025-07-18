@@ -1,8 +1,15 @@
+import { ApplicationGraph } from '@/src/application/di';
 import { BLEManager } from '../bluetooth/BLEManager';
 import { Device as BleDevice } from 'react-native-ble-plx';
+import { injectable, inject } from 'react-obsidian';
 
+@injectable(ApplicationGraph)
 export class RaceBoxService {
-  constructor(private bleManager: BLEManager) {}
+  constructor(
+    @inject('BLEManager') private bleManager: BLEManager
+  ) {}
+
+  // TODO: Add device validation, check if device is a RaceBox
 
   async getConnectedDevice(deviceId: string): Promise<BleDevice> {
     const found = await this.bleManager.getDeviceById(deviceId);

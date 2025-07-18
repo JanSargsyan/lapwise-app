@@ -4,10 +4,13 @@ import { mapRaceBoxLiveDataToDeviceData } from '../mapper/LiveDataMapper';
 import type { DeviceData } from '../../domain/model/DeviceData';
 import type { RaceBoxRepository } from '../../domain/repository/RaceBoxRepository';
 import { Observable } from 'rxjs';
-import { RaceBoxService } from '../RaceBoxService';
+import { RaceBoxService } from '../service/RaceBoxService';
+import { ApplicationGraph } from '@/src/application/di';
+import { injectable, inject } from 'react-obsidian';
 
+@injectable(ApplicationGraph)
 export class RaceBoxRepositoryImpl implements RaceBoxRepository {
-  constructor(private raceBoxService: RaceBoxService) {}
+  constructor(@inject("RaceBoxService") private raceBoxService: RaceBoxService) {}
 
   private async getApi(deviceId: string): Promise<RaceBoxApi> {
     const connected = await this.raceBoxService.getConnectedDevice(deviceId);
