@@ -5,6 +5,7 @@ import { BLEManager } from '../src/infrastructure/ble/BLEManager';
 import { DeviceUseCases } from '../src/application/use-cases/DeviceUseCases';
 import type { DeviceData } from '../src/domain/model/DeviceData';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
+import { useConnection } from './ConnectionContext';
 
 const bleManager = new BLEManager();
 const deviceUseCases = new DeviceUseCases(bleManager);
@@ -50,7 +51,7 @@ function renderLiveData(liveData: DeviceData | null) {
 
 export default function DevicePage() {
   const { deviceId } = useLocalSearchParams();
-  const navigation = useNavigation();
+  // const navigation = useNavigation();
   const [device, setDevice] = useState<BleDevice | null>(null);
   const [info, setInfo] = useState<
     | {
@@ -64,6 +65,7 @@ export default function DevicePage() {
   const [liveData, setLiveData] = useState<DeviceData | null>(null);
   const [loading, setLoading] = useState(true);
   const unsubscribeRef = useRef<() => void>();
+  const { setConnectedDeviceId } = useConnection();
 
   useEffect(() => {
     async function fetchDevice() {
@@ -116,8 +118,10 @@ export default function DevicePage() {
     try {
       if (unsubscribeRef.current) unsubscribeRef.current();
       await device.cancelConnection();
-      // @ts-ignore
-      navigation.goBack();
+      setDevice(null);
+      setLiveData(null);
+      setInfo(null);
+      setConnectedDeviceId(null);
     } catch (e) {
       Alert.alert('Error', e instanceof Error ? e.message : 'Unknown error');
     }
