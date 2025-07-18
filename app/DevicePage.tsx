@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, Button, StyleSheet, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { Device as BleDevice } from 'react-native-ble-plx';
-import { BLEManager } from '../src/infrastructure/ble/BLEManager';
+import { BLEManager } from '../src/data/bluetooth/BLEManager';
 import { DeviceUseCases } from '../src/application/use-cases/DeviceUseCases';
 import type { DeviceData } from '../src/domain/model/DeviceData';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
@@ -64,6 +64,7 @@ export default function DevicePage() {
     | null>(null);
   const [liveData, setLiveData] = useState<DeviceData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSubscribed, setIsSubscribed] = useState(false);
   const unsubscribeRef = useRef<() => void>();
   const { setConnectedDeviceId } = useConnection();
 
@@ -94,8 +95,7 @@ export default function DevicePage() {
           }
           // Read device info (optional, not part of live data)
           // You may want to move this to a use case as well
-          // Now subscribe to live data using the use case
-          unsubscribeRef.current = await deviceUseCases.subscribeToLiveData(deviceId as string, setLiveData);
+          // Do not auto-subscribe to live data here
         } else {
           setInfo(null);
         }
@@ -113,6 +113,22 @@ export default function DevicePage() {
     };
   }, [deviceId]);
 
+  const handleSubscribe = async () => {
+    if (!deviceId || typeof deviceId !== 'string') return;
+    if (unsubscribeRef.current) unsubscribeRef.current();
+    unsubscribeRef.current = await deviceUseCases.subscribeToLiveData(deviceId, setLiveData);
+    setIsSubscribed(true);
+  };
+
+  const handleUnsubscribe = () => {
+    if (unsubscribeRef.current) {
+      unsubscribeRef.current();
+      unsubscribeRef.current = undefined;
+    }
+    setIsSubscribed(false);
+    setLiveData(null);
+  };
+
   const handleDisconnect = async () => {
     if (!device) return;
     try {
@@ -122,6 +138,7 @@ export default function DevicePage() {
       setLiveData(null);
       setInfo(null);
       setConnectedDeviceId(null);
+      setIsSubscribed(false);
     } catch (e) {
       Alert.alert('Error', e instanceof Error ? e.message : 'Unknown error');
     }
@@ -144,6 +161,12 @@ export default function DevicePage() {
         <Text>No info available.</Text>
       )}
       <Button title="Disconnect" onPress={handleDisconnect} color="#c00" disabled={!device} />
+      <Button
+        title={isSubscribed ? 'Unsubscribe from Live Data' : 'Subscribe to Live Data'}
+        onPress={isSubscribed ? handleUnsubscribe : handleSubscribe}
+        color={isSubscribed ? '#888' : '#023c69'}
+        disabled={loading || !device}
+      />
       <Text style={styles.subtitle}>Live Data</Text>
       {renderLiveData(liveData)}
     </ScrollView>

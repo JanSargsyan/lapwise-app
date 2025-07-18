@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, Button, ActivityIndicator, Alert } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import { BLEManager } from '../../src/infrastructure/ble/BLEManager';
+import { BLEManager } from '../../src/data/bluetooth/BLEManager';
 import { DeviceUseCases } from '../../src/application/use-cases/DeviceUseCases';
 import { useRouter } from 'expo-router';
 import { useConnection } from '../ConnectionContext';
