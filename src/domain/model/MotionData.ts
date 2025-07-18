@@ -1,13 +1,8 @@
 export interface MotionData {
-  acceleration: {
-    x: number;
-    y: number;
-    z: number;
-  };
-  rotationRate: {
-    x: number;
-    y: number;
-    z: number;
-  };
-  gForce: number;
-} 
+  gForceX: number;
+  gForceY: number;
+  gForceZ: number;
+  rotationRateX: number;
+  rotationRateY: number;
+  rotationRateZ: number;
+}
