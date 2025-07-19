@@ -1,3 +1,4 @@
+import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
@@ -7,7 +8,7 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
-import { ConnectionProvider } from './ConnectionContext';
+import SpaceMonoFont from '../assets/fonts/SpaceMono-Regular.ttf';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -24,7 +25,7 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    SpaceMono: SpaceMonoFont,
     ...FontAwesome.font,
   });
 
@@ -44,9 +45,7 @@ export default function RootLayout() {
   }
 
   return (
-    <ConnectionProvider>
       <RootLayoutNav />
-    </ConnectionProvider>
   );
 }
 

@@ -1,4 +1,4 @@
-import { BleManager, Device } from 'react-native-ble-plx';
+import { BleManager } from 'react-native-ble-plx';
 import type { BLERespository } from '../../domain/repository/BLERespository';
 import type { DeviceStorageRepository } from '../../domain/repository/DeviceStorageRepository';
 import { DeviceType } from '@/src/domain/model/DeviceType';

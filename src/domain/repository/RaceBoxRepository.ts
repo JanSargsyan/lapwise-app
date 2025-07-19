@@ -1,6 +1,7 @@
 import type { DeviceData } from '../model/DeviceData';
 import type { RecordingConfigPayload, AckNackPayload, RecordingStatusPayload } from 'racebox-api/types';
 import type { Observable } from 'rxjs';
+import { DeviceInfo } from '../model/DeviceInfo';
 
 // TODO update with domain models, Domain layer should not depend on racebox-api
 
@@ -10,7 +11,7 @@ export interface RaceBoxRepository {
   startRecording(): Promise<AckNackPayload | null>;
   stopRecording(): Promise<AckNackPayload | null>;
   subscribeLiveData(): Observable<DeviceData>;
-  readDeviceInfo(): Promise<any>; // Replace 'any' with a proper DeviceInfo type if available
+  readDeviceInfo(): Promise<DeviceInfo>;
   getRecordingStatus(): Promise<RecordingStatusPayload | null>;
   // Optionally add utility access if needed
 }  
