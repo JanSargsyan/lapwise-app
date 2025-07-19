@@ -3,7 +3,7 @@ import { StyleSheet, View, Text, Button, ActivityIndicator, Alert } from 'react-
 import { Picker } from '@react-native-picker/picker';
 import { useRouter } from 'expo-router';
 import { container } from '@/src/application/di';
-import { DeviceType } from '@/src/domain/model/livedata/DeviceType';
+import { DeviceType } from '@/src/domain/model/device/DeviceType';
 
 export default function HomeScreen() {
   const [selectedDevice, setSelectedDevice] = useState('RaceBox');

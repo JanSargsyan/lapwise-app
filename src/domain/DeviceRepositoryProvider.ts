@@ -1,4 +1,4 @@
-import { DeviceType } from "@/src/domain/model/livedata/DeviceType";
+import { DeviceType } from "@/src/domain/model/device/DeviceType";
 import { DeviceRepository } from "@/src/domain/repository/DeviceRepository";
 import { DeviceStorageRepository } from "@/src/domain/repository/DeviceStorageRepository";
 import { RaceBoxRepository } from "@/src/domain/repository/RaceBoxRepository";

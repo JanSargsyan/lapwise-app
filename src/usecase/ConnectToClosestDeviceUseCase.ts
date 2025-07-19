@@ -1,4 +1,4 @@
-import { DeviceType } from '@/src/domain/model/livedata/DeviceType';
+import { DeviceType } from '@/src/domain/model/device/DeviceType';
 import { BLERespository } from '@/src/domain/repository/BLERespository';
 
 export class ConnectToClosestDeviceUseCase {
