@@ -7,7 +7,6 @@ export class RaceBoxService {
   ) {}
 
   // TODO: Add device validation, check if device is a RaceBox
-  // TODO: Redundant - can be done in a generic way.
 
   async getConnectedDevice(): Promise<BleDevice> {
     const found = await this.bleRepository.getDevice();

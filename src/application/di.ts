@@ -3,9 +3,9 @@ import { RaceBoxService } from '../data/service/RaceBoxService';
 import { RaceBoxRepositoryImpl } from '../data/repository/RaceBoxRepositoryImpl';
 import { DeviceStorageRepositoryImpl } from '../data/repository/DeviceStorageRepository';
 import { BLERespositoryImpl } from '../data/repository/BLERespositoryImpl';
-import { ConnectToClosestDeviceUseCase } from './use-cases/ConnectToClosestDeviceUseCase';
-import { GetLiveDataUseCase } from './use-cases/GetLiveDataUseCase';
-import { GetConnectedDeviceInfoUseCase } from './use-cases/GetConnectedDeviceInfoUseCase';
+import { ConnectToClosestDeviceUseCase } from '../usecase/ConnectToClosestDeviceUseCase';
+import { GetLiveDataUseCase } from '../usecase/GetLiveDataUseCase';
+import { GetConnectedDeviceInfoUseCase } from '../usecase/GetConnectedDeviceInfoUseCase';
 import { DeviceRepositoryProvider } from '../domain/DeviceRepositoryProvider';
 
 const btManager = new BleManager();
