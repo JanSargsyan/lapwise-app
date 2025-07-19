@@ -4,15 +4,15 @@ import { mapRaceBoxLiveDataToDeviceData } from '../mapper/LiveDataMapper';
 import type { DeviceData } from '../../domain/model/DeviceData';
 import type { RaceBoxRepository } from '../../domain/repository/RaceBoxRepository';
 import { Observable } from 'rxjs';
-import { RaceBoxService } from '../service/RaceBoxService';
 import { DeviceRepository } from '@/src/domain/repository/DeviceRepository';
 import { DeviceInfo } from '@/src/domain/model/DeviceInfo';
+import BleService from '../service/BleService';
 
 export class RaceBoxRepositoryImpl implements RaceBoxRepository, DeviceRepository{
-  constructor(private raceBoxService: RaceBoxService) {}
+  constructor(private bleService: BleService) {}
 
   private async getApi(): Promise<RaceBoxApi> {
-    const connected = await this.raceBoxService.getConnectedDevice();
+    const connected = await this.bleService.getConnectedDevice();
     return new RaceBoxApi(connected);
   }
 

@@ -1,5 +1,4 @@
 import { BleManager } from 'react-native-ble-plx';
-import { RaceBoxService } from '../data/service/RaceBoxService';
 import { RaceBoxRepositoryImpl } from '../data/repository/RaceBoxRepositoryImpl';
 import { DeviceStorageRepositoryImpl } from '../data/repository/DeviceStorageRepository';
 import { BLERespositoryImpl } from '../data/repository/BLERespositoryImpl';
@@ -7,15 +6,16 @@ import { ConnectToClosestDeviceUseCase } from '../usecase/ConnectToClosestDevice
 import { GetLiveDataUseCase } from '../usecase/GetLiveDataUseCase';
 import { GetConnectedDeviceInfoUseCase } from '../usecase/GetConnectedDeviceInfoUseCase';
 import { DeviceRepositoryProvider } from '../domain/DeviceRepositoryProvider';
+import BleService from '../data/service/BleService';
 
 const btManager = new BleManager();
 
 const deviceStorageRepository = new DeviceStorageRepositoryImpl();
 
 const bleRepository = new BLERespositoryImpl(btManager, deviceStorageRepository)
-const raceBoxService = new RaceBoxService(bleRepository);
+const bleService = new BleService(btManager, deviceStorageRepository);
 
-const raceBoxRepository = new RaceBoxRepositoryImpl(raceBoxService);
+const raceBoxRepository = new RaceBoxRepositoryImpl(bleService);
 
 const deviceRepositoryProvider = new DeviceRepositoryProvider(deviceStorageRepository, raceBoxRepository);
 
