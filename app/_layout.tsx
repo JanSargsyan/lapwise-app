@@ -8,7 +8,7 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
-import SpaceMonoFont from '../assets/fonts/SpaceMono-Regular.ttf';
+import SpaceMonoFont from '@/assets/fonts/SpaceMono-Regular.ttf';
 
 export {
   // Catch any errors thrown by the Layout component.

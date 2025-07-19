@@ -1,12 +1,12 @@
 import { BleManager } from 'react-native-ble-plx';
-import { RaceBoxRepositoryImpl } from '../data/repository/RaceBoxRepositoryImpl';
-import { DeviceStorageRepositoryImpl } from '../data/repository/DeviceStorageRepository';
-import { BLERespositoryImpl } from '../data/repository/BLERespositoryImpl';
-import { ConnectToClosestDeviceUseCase } from '../usecase/ConnectToClosestDeviceUseCase';
-import { GetLiveDataUseCase } from '../usecase/GetLiveDataUseCase';
-import { GetConnectedDeviceInfoUseCase } from '../usecase/GetConnectedDeviceInfoUseCase';
-import { DeviceRepositoryProvider } from '../domain/DeviceRepositoryProvider';
-import BleService from '../data/service/BleService';
+import { RaceBoxRepositoryImpl } from '@/src/data/repository/RaceBoxRepositoryImpl';
+import { DeviceStorageRepositoryImpl } from '@/src/data/repository/DeviceStorageRepository';
+import { BLERespositoryImpl } from '@/src/data/repository/BLERespositoryImpl';
+import { ConnectToClosestDeviceUseCase } from '@/src/usecase/ConnectToClosestDeviceUseCase';
+import { GetLiveDataUseCase } from '@/src/usecase/GetLiveDataUseCase';
+import { GetConnectedDeviceInfoUseCase } from '@/src/usecase/GetConnectedDeviceInfoUseCase';
+import { DeviceRepositoryProvider } from '@/src/domain/DeviceRepositoryProvider';
+import BleService from '@/src/data/service/BleService';
 
 const btManager = new BleManager();
 

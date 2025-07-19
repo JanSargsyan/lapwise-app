@@ -16,6 +16,22 @@ export default defineConfig([
       },
     },
   },
+  {
+    files: ["src/**/*", "app/**/*", "components/**/*", "constants/**/*"],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['./*', '../*', './**', '../**'],
+              message: 'Use absolute imports (e.g., src/foo/bar) instead of relative imports.',
+            },
+          ],
+        },
+      ],
+    },
+  },
   { files: ["**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"], languageOptions: { globals: globals.browser } },
   tseslint.configs.recommended,
   pluginReact.configs.flat.recommended,

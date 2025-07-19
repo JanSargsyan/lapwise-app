@@ -1,12 +1,12 @@
 import { RaceBoxApi } from 'racebox-api';
 import type { RecordingConfigPayload, AckNackPayload, RecordingStatusPayload, RaceBoxLiveData } from 'racebox-api/types';
-import { mapRaceBoxLiveDataToDeviceData } from '../mapper/LiveDataMapper';
-import type { DeviceData } from '../../domain/model/DeviceData';
-import type { RaceBoxRepository } from '../../domain/repository/RaceBoxRepository';
+import { mapRaceBoxLiveDataToDeviceData } from '@/src/data/mapper/LiveDataMapper';
+import type { DeviceData } from '@/src/domain/model/DeviceData';
+import type { RaceBoxRepository } from '@/src/domain/repository/RaceBoxRepository';
 import { Observable } from 'rxjs';
 import { DeviceRepository } from '@/src/domain/repository/DeviceRepository';
 import { DeviceInfo } from '@/src/domain/model/DeviceInfo';
-import BleService from '../service/BleService';
+import BleService from '@/src/data/service/BleService';
 
 export class RaceBoxRepositoryImpl implements RaceBoxRepository, DeviceRepository{
   constructor(private bleService: BleService) {}

@@ -1,6 +1,6 @@
 import type { Observable } from 'rxjs';
-import { DeviceData } from '../model/DeviceData';
-import { DeviceInfo } from '../model/DeviceInfo';
+import { DeviceData } from '@/src/domain/model/DeviceData';
+import { DeviceInfo } from '@/src/domain/model/DeviceInfo';
 
 // TODO update with domain models, Domain layer should not depend on racebox-api
 

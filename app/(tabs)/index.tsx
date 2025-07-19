@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View, Text, Button, ActivityIndicator, Alert } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useRouter } from 'expo-router';
-import { container } from '../../src/application/di';
+import { container } from '@/src/application/di';
 import { DeviceType } from '@/src/domain/model/DeviceType';
 
 export default function HomeScreen() {

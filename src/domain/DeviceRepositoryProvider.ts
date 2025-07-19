@@ -1,7 +1,7 @@
-import { DeviceType } from "./model/DeviceType";
-import { DeviceRepository } from "./repository/DeviceRepository";
-import { DeviceStorageRepository } from "./repository/DeviceStorageRepository";
-import { RaceBoxRepository } from "./repository/RaceBoxRepository";
+import { DeviceType } from "@/src/domain/model/DeviceType";
+import { DeviceRepository } from "@/src/domain/repository/DeviceRepository";
+import { DeviceStorageRepository } from "@/src/domain/repository/DeviceStorageRepository";
+import { RaceBoxRepository } from "@/src/domain/repository/RaceBoxRepository";
 
 export class DeviceRepositoryProvider {
 

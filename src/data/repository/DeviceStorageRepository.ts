@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { DeviceStorageRepository } from '../../domain/repository/DeviceStorageRepository';
+import type { DeviceStorageRepository } from '@/src/domain/repository/DeviceStorageRepository';
 import { DeviceType, fromString } from '@/src/domain/model/DeviceType';
 
 const DEVICE_ID_KEY = 'connectedDeviceId';
