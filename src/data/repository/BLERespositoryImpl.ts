@@ -11,42 +11,46 @@ export class BLERespositoryImpl implements BLERespository {
 
   async scanAndConnect(deviceType: DeviceType): Promise<boolean> {
     return new Promise((resolve, reject) => {
-        let closestDevice: Device | null = null;
-        let strongestRssi = -Infinity;
-        const subscription = this.manager.onStateChange((state) => {
-          if (state === 'PoweredOn') {
-            this.manager.startDeviceScan(null, null, (error, device) => {
-              if (error) {
-                subscription.remove();
-                this.manager.stopDeviceScan();
-                reject(error);
-                return;
-              }
-              if (device && device.name && device.name.startsWith(deviceType)) {
-                if (device.rssi !== null && device.rssi > strongestRssi) {
-                  closestDevice = device;
-                  strongestRssi = device.rssi;
-                }
-              }
-            });
-            // Stop scan after 10 seconds and connect
-            setTimeout(async () => {
+      let found = false;
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
+      const subscription = this.manager.onStateChange((state) => {
+        if (state === 'PoweredOn') {
+          this.manager.startDeviceScan(null, null, async (error, device) => {
+            if (error) {
+              if (timeoutId) clearTimeout(timeoutId);
+              subscription.remove();
+              this.manager.stopDeviceScan();
+              reject(error);
+              return;
+            }
+            if (
+              device &&
+              device.name &&
+              device.name.startsWith(deviceType)
+            ) {
+              if (timeoutId) clearTimeout(timeoutId);
+              found = true;
               this.manager.stopDeviceScan();
               subscription.remove();
-              if (closestDevice) {
-                try {
-                  const connected = await closestDevice.connect();
-                  await this.deviceStorageRepository.saveConnectedDevice(connected.id, deviceType);
-                  resolve(true);
-                } catch (e) {
-                  reject(e);
-                }
-              } else {
-                resolve(false);
+              try {
+                const connected = await device.connect();
+                await this.deviceStorageRepository.saveConnectedDevice(connected.id, deviceType);
+                resolve(true);
+              } catch (e) {
+                reject(e);
               }
-            }, 10000);
-          }
-        }, true);
-      });
+            }
+          });
+          // Timeout after 10 seconds if not found
+          timeoutId = setTimeout(() => {
+            if (!found) {
+              this.manager.stopDeviceScan();
+              subscription.remove();
+              resolve(false);
+            }
+          }, 10000);
+        }
+      }, true);
+    });
   }
 } 
