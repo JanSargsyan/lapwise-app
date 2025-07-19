@@ -1,11 +1,11 @@
+import { DeviceRepositoryProvider } from '@/src/domain/DeviceRepositoryProvider';
 import { DeviceInfo } from '@/src/domain/model/DeviceInfo';
-import { DeviceRepository } from '@/src/domain/repository/DeviceRepository';
 
 export class GetConnectedDeviceInfoUseCase {
-  constructor(private deviceRepository: DeviceRepository) {}
+  constructor(private deviceRepositoryProvider: DeviceRepositoryProvider) {}
 
   execute(): Promise<DeviceInfo | null> {
-    return this.deviceRepository.readDeviceInfo();
+    return this.deviceRepositoryProvider.get().then(repository => repository.readDeviceInfo());
   }
   
 } 

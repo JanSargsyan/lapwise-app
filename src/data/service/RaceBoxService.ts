@@ -21,7 +21,6 @@ export class RaceBoxService {
     }
     if (typeof connected.discoverAllServicesAndCharacteristics === 'function') {
       connected = await connected.discoverAllServicesAndCharacteristics();
-      console.log(connected.characteristicsForService)
     }
     return connected;
   }

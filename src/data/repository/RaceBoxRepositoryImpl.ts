@@ -69,8 +69,8 @@ export class RaceBoxRepositoryImpl implements RaceBoxRepository, DeviceRepositor
     }
   }
 
-  async getRecordingStatus(deviceId: string): Promise<RecordingStatusPayload | null> {
-    const api = await this.getApi(deviceId);
+  async getRecordingStatus(): Promise<RecordingStatusPayload | null> {
+    const api = await this.getApi();
     return api.getRecordingStatus();
   }
 } 

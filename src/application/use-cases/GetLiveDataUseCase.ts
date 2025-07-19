@@ -1,11 +1,13 @@
-import type { Observable } from 'rxjs';
+import { from, mergeMap, type Observable } from 'rxjs';
 import type { DeviceData } from '../../domain/model/DeviceData';
-import { DeviceRepository } from '@/src/domain/repository/DeviceRepository';
+import { DeviceRepositoryProvider } from '@/src/domain/DeviceRepositoryProvider';
 
 export class GetLiveDataUseCase {
-  constructor(private deviceRepository: DeviceRepository) {}
+  constructor(private deviceRepositoryProvider: DeviceRepositoryProvider) {}
 
   execute(): Observable<DeviceData> {
-    return this.deviceRepository.subscribeLiveData();
+    return from(this.deviceRepositoryProvider.get()).pipe(
+      mergeMap(repository => repository.subscribeLiveData())
+    );
   }
 } 

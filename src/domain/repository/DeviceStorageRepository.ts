@@ -1,5 +1,8 @@
+import { DeviceType } from "../model/DeviceType";
+
 export interface DeviceStorageRepository {
-  saveConnectedDeviceId(deviceId: string): Promise<void>;
+  saveConnectedDevice(deviceId: string, deviceType: DeviceType): Promise<void>;
   getConnectedDeviceId(): Promise<string | null>;
+  getConnectedDeviceType(): Promise<DeviceType | null>;
   clearConnectedDeviceId(): Promise<void>;
 } 

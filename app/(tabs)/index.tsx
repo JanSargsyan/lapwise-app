@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, Button, ActivityIndicator, Alert } from 'react-
 import { Picker } from '@react-native-picker/picker';
 import { useRouter } from 'expo-router';
 import { container } from '../../src/application/di';
+import { DeviceType } from '@/src/domain/model/DeviceType';
 
 export default function HomeScreen() {
   const [selectedDevice, setSelectedDevice] = useState('RaceBox');
@@ -13,7 +14,7 @@ export default function HomeScreen() {
     if (selectedDevice === 'RaceBox') {
       setLoading(true);
       try {
-        const connected = await container.connectToClosestRaceBoxUseCase.execute();
+        const connected = await container.connectToClosestDeviceUseCase.execute(DeviceType.RACEBOX);
         setLoading(false);
         if (connected) {
           // Navigate to DevicePage without passing deviceId
