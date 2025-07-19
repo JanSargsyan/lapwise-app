@@ -1,7 +1,7 @@
 import { BleManager } from 'react-native-ble-plx';
 import type { BLERespository } from '@/src/domain/repository/BLERespository';
 import type { DeviceStorageRepository } from '@/src/domain/repository/DeviceStorageRepository';
-import { DeviceType } from '@/src/domain/model/DeviceType';
+import { DeviceType } from '@/src/domain/model/livedata/DeviceType';
 
 export class BLERespositoryImpl implements BLERespository {
   constructor(

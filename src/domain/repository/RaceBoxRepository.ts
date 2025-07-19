@@ -1,7 +1,7 @@
-import type { DeviceData } from '@/src/domain/model/DeviceData';
+import type { DeviceData } from '@/src/domain/model/livedata/DeviceData';
 import type { RecordingConfigPayload, AckNackPayload, RecordingStatusPayload } from 'racebox-api/types';
 import type { Observable } from 'rxjs';
-import { DeviceInfo } from '@/src/domain/model/DeviceInfo';
+import { DeviceInfo } from '@/src/domain/model/device/DeviceInfo';
 
 // TODO update with domain models, Domain layer should not depend on racebox-api
 

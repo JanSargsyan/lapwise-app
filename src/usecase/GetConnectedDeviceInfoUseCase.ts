@@ -1,5 +1,5 @@
 import { DeviceRepositoryProvider } from '@/src/domain/DeviceRepositoryProvider';
-import { DeviceInfo } from '@/src/domain/model/DeviceInfo';
+import { DeviceInfo } from '@/src/domain/model/device/DeviceInfo';
 
 export class GetConnectedDeviceInfoUseCase {
   constructor(private deviceRepositoryProvider: DeviceRepositoryProvider) {}

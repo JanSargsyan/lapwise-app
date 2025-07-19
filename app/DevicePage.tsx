@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, Button, StyleSheet, ActivityIndicator, Alert, ScrollView } from 'react-native';
-import type { DeviceData } from '@/src/domain/model/DeviceData';
+import type { DeviceData } from '@/src/domain/model/livedata/DeviceData';
 import { container } from '@/src/application/di';
-import type { DeviceInfo } from '@/src/domain/model/DeviceInfo';
+import type { DeviceInfo } from '@/src/domain/model/device/DeviceInfo';
 import { Subscription } from 'rxjs';
 
 function renderLiveData(liveData: DeviceData | null) {

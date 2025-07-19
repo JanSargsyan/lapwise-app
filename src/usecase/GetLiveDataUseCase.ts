@@ -1,5 +1,5 @@
 import { from, mergeMap, type Observable } from 'rxjs';
-import type { DeviceData } from '@/src/domain/model/DeviceData';
+import type { DeviceData } from '@/src/domain/model/livedata/DeviceData';
 import { DeviceRepositoryProvider } from '@/src/domain/DeviceRepositoryProvider';
 
 export class GetLiveDataUseCase {

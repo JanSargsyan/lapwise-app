@@ -1,4 +1,4 @@
-import { DeviceType } from "@/src/domain/model/DeviceType";
+import { DeviceType } from "@/src/domain/model/livedata/DeviceType";
 
 export interface DeviceStorageRepository {
   saveConnectedDevice(deviceId: string, deviceType: DeviceType): Promise<void>;

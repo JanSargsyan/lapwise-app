@@ -1,9 +1,9 @@
 import type { RaceBoxLiveData } from 'racebox-api/types';
-import type { DeviceData } from '@/src/domain/model/DeviceData';
-import type { TimeData } from '@/src/domain/model/TimeData';
-import type { LocationData } from '@/src/domain/model/LocationData';
-import type { MotionData } from '@/src/domain/model/MotionData';
-import type { SensorData } from '@/src/domain/model/SensorData';
+import type { DeviceData } from '@/src/domain/model/livedata/DeviceData';
+import type { TimeData } from '@/src/domain/model/livedata/TimeData';
+import type { LocationData } from '@/src/domain/model/livedata/LocationData';
+import type { MotionData } from '@/src/domain/model/livedata/MotionData';
+import type { SensorData } from '@/src/domain/model/livedata/SensorData';
 
 export function mapRaceBoxLiveDataToDeviceData(liveData: RaceBoxLiveData): DeviceData {
   const time: TimeData = {
