@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View, Text, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -21,6 +21,7 @@ const ADDED_DEVICES = [
 export default function DeviceScreen() {
   const colorScheme = useColorScheme();
   const navigation = useNavigation();
+  const router = useRouter();
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
@@ -31,7 +32,7 @@ export default function DeviceScreen() {
           size={28}
           color={Colors[colorScheme ?? 'light'].tint}
           style={{ marginRight: 12 }}
-          onPress={() => navigation.navigate('AddDevicePage' as never)}
+          onPress={() => router.push('/devices/AddDeviceScreen')}
         />
       ),
     });

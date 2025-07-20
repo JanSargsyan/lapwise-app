@@ -7,6 +7,7 @@ import { GetLiveDataUseCase } from '@/src/usecase/GetLiveDataUseCase';
 import { GetConnectedDeviceInfoUseCase } from '@/src/usecase/GetConnectedDeviceInfoUseCase';
 import { DeviceRepositoryProvider } from '@/src/domain/DeviceRepositoryProvider';
 import BleService from '@/src/data/service/BleService';
+import { ScanForBLEDevicesUseCase } from '@/src/usecase/ScanForBLEDevicesUseCase';
 
 const btManager = new BleManager();
 
@@ -23,10 +24,12 @@ const connectToClosestDeviceUseCase = new ConnectToClosestDeviceUseCase(bleRepos
 // TODO: Add repository provider that will inject racebox/mock repository to the use cases
 const getLiveDataUseCase = new GetLiveDataUseCase(deviceRepositoryProvider);
 const getConnectedDeviceInfoUseCase = new GetConnectedDeviceInfoUseCase(deviceRepositoryProvider);
+const scanForBLEDevicesUseCase = new ScanForBLEDevicesUseCase(bleRepository);
 
 
 export const container = {
     connectToClosestDeviceUseCase: connectToClosestDeviceUseCase,
     getLiveDataUseCase: getLiveDataUseCase,
-    getConnectedDeviceInfoUseCase: getConnectedDeviceInfoUseCase
+    getConnectedDeviceInfoUseCase: getConnectedDeviceInfoUseCase,
+    scanForBLEDevicesUseCase: scanForBLEDevicesUseCase
 }

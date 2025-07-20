@@ -1,13 +1,23 @@
 import { BleManager } from 'react-native-ble-plx';
-import type { BLERespository } from '@/src/domain/repository/BLERespository';
+import type { BLERespository, ScannedBleDevice } from '@/src/domain/repository/BLERespository';
 import type { DeviceStorageRepository } from '@/src/domain/repository/DeviceStorageRepository';
 import { DeviceType } from '@/src/domain/model/device/DeviceType';
+import { DeviceType as Device } from '@/src/domain/model/device/Device';
+import { Observable } from 'rxjs';
 
 export class BLERespositoryImpl implements BLERespository {
   constructor(
     private manager: BleManager,
     private deviceStorageRepository: DeviceStorageRepository
   ) {}
+
+  scanForDevices(deviceType: Device): Observable<ScannedBleDevice[]> {
+    return new Observable<ScannedBleDevice[]>(subscriber => {
+      subscriber.next([]);
+      subscriber.complete();
+    });
+  }
+
 
   async scanAndConnect(deviceType: DeviceType): Promise<boolean> {
     return new Promise((resolve, reject) => {

@@ -1,16 +1,22 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 
-export default function WifiConnectScreen() {
+export default function AddWifiDeviceScreen() {
   const colorScheme = useColorScheme();
+  const { device } = useLocalSearchParams<{ device: string }>();
+  const parsedDevice = device ? JSON.parse(device) : null;
   const [wifiName, setWifiName] = useState('');
   const [wifiPassword, setWifiPassword] = useState('');
 
   return (
     <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}> 
       <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].tint }]}>Connect to WiFi Device</Text>
+      {parsedDevice && (
+        <Text style={[styles.deviceLabel, { color: Colors[colorScheme ?? 'light'].text }]}>Device: {parsedDevice.label}</Text>
+      )}
       <Text style={[styles.subtitle, { color: Colors[colorScheme ?? 'light'].text }]}>Enter your WiFi credentials</Text>
       <View style={styles.form}>
         <Text style={styles.label}>WiFi Name</Text>
@@ -30,7 +36,7 @@ export default function WifiConnectScreen() {
           onChangeText={setWifiPassword}
           secureTextEntry
         />
-        <TouchableOpacity style={[styles.button, { backgroundColor: Colors[colorScheme ?? 'light'].tint }]}>
+        <TouchableOpacity style={[styles.button, { backgroundColor: Colors[colorScheme ?? 'light'].tint }]}> 
           <Text style={styles.buttonText}>Connect</Text>
         </TouchableOpacity>
       </View>
@@ -50,6 +56,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 16,
     letterSpacing: 0.2,
+  },
+  deviceLabel: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 8,
+    letterSpacing: 0.1,
   },
   subtitle: {
     fontSize: 18,
