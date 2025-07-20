@@ -1,5 +1,6 @@
 export enum DeviceType {
-    RACEBOX = "RaceBox"
+    RACEBOX = "RaceBox",
+    PHONE = "This phone",
 }
 
 export const fromString = (deviceType: string): DeviceType | null => {
