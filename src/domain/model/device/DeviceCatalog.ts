@@ -24,6 +24,13 @@ export const DeviceCatalog = {
       connectionType: "WiFi",
       connectionProps: {}
     },
+    Mock: {
+        id: "racebox_original",
+        label: "MockBox Original",
+        manufacturer: "Lapwise",
+        connectionType: "Mock",
+        connectionProps: {}
+      },
     Phone: {
       id: "phone",
       label: "Phone GPS",
