@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, Platform, PermissionsAndroid, Alert, Linking } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, Platform, PermissionsAndroid, Alert, Linking, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -16,6 +16,7 @@ export default function AddBleDeviceScreen() {
   const [scannedDevices, setScannedDevices] = useState<ScannedBleDevice[]>([]);
   const [loading, setLoading] = useState(true);
   const [permissionsGranted, setPermissionsGranted] = useState(true);
+  const [connectingId, setConnectingId] = useState<string | null>(null);
 
   useEffect(() => {
     async function checkPermissions() {
@@ -86,6 +87,23 @@ export default function AddBleDeviceScreen() {
     return () => subscription.unsubscribe();
   }, [params.device, permissionsGranted]);
 
+  const handleConnect = async (id: string) => {
+    if (!deviceType) return;
+    setConnectingId(id);
+    try {
+      const success = await container.connectToBLEDeviceUseCase.execute(id, deviceType);
+      if (success) {
+        Alert.alert('Success', 'Connected to device!');
+      } else {
+        Alert.alert('Connection Failed', 'Could not connect to the device.');
+      }
+    } catch {
+      Alert.alert('Connection Error', 'An error occurred while connecting.');
+    } finally {
+      setConnectingId(null);
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}> 
       <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].tint }]}>Find Your Device</Text>
@@ -110,6 +128,17 @@ export default function AddBleDeviceScreen() {
           <View style={styles.deviceRow}>
             <Text style={styles.deviceName}>{item.name}</Text>
             <Text style={styles.deviceRssi}>RSSI: {item.rssi}</Text>
+            <TouchableOpacity
+              style={[styles.connectButton, connectingId === item.id && styles.connectButtonDisabled]}
+              onPress={() => handleConnect(item.id)}
+              disabled={!!connectingId}
+            >
+              {connectingId === item.id ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.connectButtonText}>Connect</Text>
+              )}
+            </TouchableOpacity>
           </View>
         )}
         contentContainerStyle={styles.deviceList}
@@ -197,6 +226,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#888',
     marginTop: 32,
+    fontSize: 16,
+  },
+  connectButton: {
+    backgroundColor: '#2196f3',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginLeft: 12,
+  },
+  connectButtonDisabled: {
+    backgroundColor: '#90caf9',
+  },
+  connectButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
     fontSize: 16,
   },
 }); 
