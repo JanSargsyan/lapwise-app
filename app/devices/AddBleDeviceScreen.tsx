@@ -5,18 +5,23 @@ import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { container } from '@/src/application/di';
 import type { ScannedBleDevice } from '@/src/domain/repository/BLERespository';
+import { fromString } from '@/src/domain/model/device/Device';
+import { DeviceCatalog } from '@/src/domain/model/device/DeviceCatalog';
+import { BLEConnectionProps } from '@/src/domain/model/device/ConnectionType';
 
 export default function AddBleDeviceScreen() {
   const colorScheme = useColorScheme();
-  const { device } = useLocalSearchParams<{ device: string }>();
-  const parsedDevice = device ? JSON.parse(device) : null;
+  const params = useLocalSearchParams<{ device: string }>();
+  const deviceType = fromString(params.device);
   const [scannedDevices, setScannedDevices] = useState<ScannedBleDevice[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!parsedDevice) return;
+    console.log('Params:', params);
+    console.log('Effect:', deviceType);
+    if (!deviceType) return;
     setLoading(true);
-    const subscription = container.scanForBLEDevicesUseCase.execute(parsedDevice).subscribe({
+    const subscription = container.scanForBLEDevicesUseCase.execute(deviceType).subscribe({
       next: (devices) => {
         setScannedDevices(devices);
         setLoading(false);
@@ -24,17 +29,17 @@ export default function AddBleDeviceScreen() {
       error: () => setLoading(false),
     });
     return () => subscription.unsubscribe();
-  }, [device]);
+  }, [params.device]);
 
   return (
     <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}> 
       <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].tint }]}>Find Your Device</Text>
-      {parsedDevice && (
+      {deviceType && (
         <>
-          <Text style={[styles.deviceLabel, { color: Colors[colorScheme ?? 'light'].text }]}>Device: {parsedDevice.label}</Text>
+          <Text style={[styles.deviceLabel, { color: Colors[colorScheme ?? 'light'].text }]}>Device: {DeviceCatalog[deviceType].label}</Text>
           <View style={styles.infoBox}>
             <Text style={[styles.infoLabel, { color: Colors[colorScheme ?? 'light'].tint }]}>Looking for:</Text>
-            <Text style={[styles.infoValue, { color: Colors[colorScheme ?? 'light'].text }]}>{parsedDevice.connectionProps?.advertisedNamePrefix}</Text>
+            <Text style={[styles.infoValue, { color: Colors[colorScheme ?? 'light'].text }]}>{(DeviceCatalog[deviceType].connectionProps as BLEConnectionProps )?.advertisedNamePrefix}</Text>
           </View>
         </>
       )}

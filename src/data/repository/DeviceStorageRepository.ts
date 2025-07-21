@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { DeviceStorageRepository } from '@/src/domain/repository/DeviceStorageRepository';
-import { DeviceType, fromString } from '@/src/domain/model/device/DeviceType';
+import { DeviceType, fromString } from '@/src/domain/model/device/Device';
 
 const DEVICE_ID_KEY = 'connectedDeviceId';
 const DEVICE_TYPE_KEY = 'connectedDeviceType';
@@ -8,7 +8,7 @@ const DEVICE_TYPE_KEY = 'connectedDeviceType';
 export class DeviceStorageRepositoryImpl implements DeviceStorageRepository {
   async saveConnectedDevice(deviceId: string, deviceType: DeviceType): Promise<void> {
     await AsyncStorage.setItem(DEVICE_ID_KEY, deviceId);
-    await AsyncStorage.setItem(DEVICE_TYPE_KEY, deviceType);
+    await AsyncStorage.setItem(DEVICE_TYPE_KEY, deviceType.id);
   }
 
   async getConnectedDeviceId(): Promise<string | null> {

@@ -1,4 +1,4 @@
-import { DeviceType } from "@/src/domain/model/device/DeviceType";
+import { DeviceType } from "@/src/domain/model/device/Device";
 
 export interface DeviceStorageRepository {
   saveConnectedDevice(deviceId: string, deviceType: DeviceType): Promise<void>;

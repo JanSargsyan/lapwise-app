@@ -6,6 +6,7 @@ export class ScanForBLEDevicesUseCase {
   constructor(private bleRepository: BLERespository) {}
 
   execute(deviceType: DeviceType): Observable<ScannedBleDevice[]> {
+    console.log('Scanning for BLE devices for device type:', deviceType);
     return this.bleRepository.scanForDevices(deviceType);
   }
 } 

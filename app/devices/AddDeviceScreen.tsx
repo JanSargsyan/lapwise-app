@@ -101,10 +101,10 @@ export default function AddDevicePage() {
             style={[styles.deviceRow, index === filteredDevices.length - 1 && styles.deviceRowLast]}
             onPress={() => {
               if (item.connectionType === 'BLE') {
-                router.push({ pathname: '/devices/AddBleDeviceScreen', params: { device: JSON.stringify(item) } });
+                router.push({ pathname: '/devices/AddBleDeviceScreen', params: { device: item.id } });
               }
               if (item.connectionType === 'WiFi') {
-                router.push({ pathname: '/devices/AddWifiDeviceScreen', params: { device: JSON.stringify(item) } });
+                router.push({ pathname: '/devices/AddWifiDeviceScreen', params: { device: item.id } });
               }
             }}
             activeOpacity={0.7}

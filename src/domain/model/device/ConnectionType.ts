@@ -1,4 +1,4 @@
-export type ConnectionType = "BLE" | "WiFi" | "Phone";
+export type ConnectionType = "BLE" | "WiFi" | "Mock" | "Phone";
 
 export interface BLEConnectionProps {
   advertisedNamePrefix: string;
