@@ -153,4 +153,14 @@ export class BLERespositoryImpl implements BLERespository {
       }, true);
     });
   }
+
+  async connectToDevice(address: string, deviceType: DeviceType): Promise<boolean> {
+    try {
+      const device = await this.manager.connectToDevice(address);
+      await this.deviceStorageRepository.saveConnectedDevice(device.id, deviceType);
+      return true;
+    } catch {
+      return false;
+    }
+  }
 } 
