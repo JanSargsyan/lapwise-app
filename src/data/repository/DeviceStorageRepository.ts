@@ -8,7 +8,7 @@ const DEVICE_TYPE_KEY = 'connectedDeviceType';
 export class DeviceStorageRepositoryImpl implements DeviceStorageRepository {
   async saveConnectedDevice(deviceId: string, deviceType: DeviceType): Promise<void> {
     await AsyncStorage.setItem(DEVICE_ID_KEY, deviceId);
-    await AsyncStorage.setItem(DEVICE_TYPE_KEY, deviceType.id);
+    await AsyncStorage.setItem(DEVICE_TYPE_KEY, deviceType);
   }
 
   async getConnectedDeviceId(): Promise<string | null> {

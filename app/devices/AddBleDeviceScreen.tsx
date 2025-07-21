@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, Platform, PermissionsAndroid, Alert, Linking } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -15,25 +15,83 @@ export default function AddBleDeviceScreen() {
   const deviceType = fromString(params.device);
   const [scannedDevices, setScannedDevices] = useState<ScannedBleDevice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [permissionsGranted, setPermissionsGranted] = useState(true);
 
   useEffect(() => {
+    async function checkPermissions() {
+      if (Platform.OS === 'android') {
+        try {
+          // Android 12+ (API 31): need BLUETOOTH_SCAN, BLUETOOTH_CONNECT, and location
+          // Below 12: only location
+          const permissions = [PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION];
+          if (Platform.Version >= 31) {
+            permissions.push(
+              PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+              PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT
+            );
+          }
+
+          for (const permission of permissions) {
+            const alreadyGranted = await PermissionsAndroid.check(permission);
+            if (!alreadyGranted) {
+              const result = await PermissionsAndroid.request(permission);
+              if (result === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
+                setPermissionsGranted(false);
+                Alert.alert(
+                  'Permission Required',
+                  'Some permissions are permanently denied. Please enable them in app settings.',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Open Settings', onPress: () => Linking.openSettings() },
+                  ]
+                );
+                return;
+              }
+              if (result !== PermissionsAndroid.RESULTS.GRANTED) {
+                setPermissionsGranted(false);
+                Alert.alert(
+                  'Permissions Required',
+                  'Bluetooth and Location permissions are required to scan for BLE devices.'
+                );
+                return;
+              }
+            }
+          }
+          setPermissionsGranted(true);
+        } catch {
+          setPermissionsGranted(false);
+          Alert.alert('Permission Error', 'Failed to check permissions.');
+        }
+      } else {
+        setPermissionsGranted(true);
+      }
+    }
+    checkPermissions();
+  }, []);
+
+  useEffect(() => {
+    if (!permissionsGranted) return;
     console.log('Params:', params);
     console.log('Effect:', deviceType);
     if (!deviceType) return;
     setLoading(true);
     const subscription = container.scanForBLEDevicesUseCase.execute(deviceType).subscribe({
       next: (devices) => {
+        console.log('Devices:', devices);
         setScannedDevices(devices);
         setLoading(false);
       },
       error: () => setLoading(false),
     });
     return () => subscription.unsubscribe();
-  }, [params.device]);
+  }, [params.device, permissionsGranted]);
 
   return (
     <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}> 
       <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].tint }]}>Find Your Device</Text>
+      {!permissionsGranted && (
+        <Text style={{ color: 'red', marginBottom: 16 }}>Bluetooth and Location permissions are required to scan for BLE devices.</Text>
+      )}
       {deviceType && (
         <>
           <Text style={[styles.deviceLabel, { color: Colors[colorScheme ?? 'light'].text }]}>Device: {DeviceCatalog[deviceType].label}</Text>

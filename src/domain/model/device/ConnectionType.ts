@@ -5,7 +5,6 @@ export interface BLEConnectionProps {
   serviceUUIDs?: string[];
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface WiFiConnectionProps {
     ssidPrefix?: string;
     ipAddress?: string;
