@@ -1,13 +1,11 @@
-// export enum DeviceType {
-//     RACEBOX = "RaceBox",
-//     PHONE = "This phone",
-// }
+export enum DeviceType {
+    RaceBoxMini = "racebox_mini",
+    RaceBoxMicro = "racebox_micro",
+    RaceBoxOriginal = "racebox_original",
+    Mock = "mock",
+    Phone = "phone",
+}
 
-// export const fromString = (deviceType: string): DeviceType | null => {
-//     switch (deviceType) {
-//         case DeviceType.RACEBOX:
-//             return DeviceType.RACEBOX; 
-//         default:
-//             return null;
-//     }
-// }
+export function fromString(deviceType: string): DeviceType | null {
+    return Object.values(DeviceType).find(type => type === deviceType) ?? null;
+}

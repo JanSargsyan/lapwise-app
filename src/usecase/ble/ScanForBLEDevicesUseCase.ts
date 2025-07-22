@@ -1,6 +1,6 @@
 import { type Observable } from 'rxjs';
 import { BLERespository, ScannedBleDevice } from '@/src/domain/repository/BLERespository';
-import { DeviceType } from '@/src/domain/model/device/Device';
+import { DeviceType } from '@/src/domain/model/device/DeviceType';
 
 export class ScanForBLEDevicesUseCase {
   constructor(private bleRepository: BLERespository) {}

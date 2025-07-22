@@ -1,4 +1,4 @@
-import { DeviceType } from "@/src/domain/model/device/Device";
+import { DeviceType } from "@/src/domain/model/device/DeviceType";
 
 export const DeviceCatalog = {
     [DeviceType.RaceBoxMini]: {

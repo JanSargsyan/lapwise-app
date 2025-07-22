@@ -1,7 +1,7 @@
 import { BleManager } from 'react-native-ble-plx';
 import type { BLERespository, ScannedBleDevice } from '@/src/domain/repository/BLERespository';
-import type { DeviceStorageRepository } from '@/src/domain/repository/DeviceStorageRepository';
-import { DeviceType } from '@/src/domain/model/device/Device';
+// import type { DeviceStorageRepository } from '@/src/domain/repository/DeviceStorageRepository';
+import { DeviceType } from '@/src/domain/model/device/DeviceType';
 import { Observable } from 'rxjs';
 import { DeviceCatalog } from '@/src/domain/model/device/DeviceCatalog';
 import { BLEConnectionProps } from '@/src/domain/model/device/ConnectionType';
@@ -11,7 +11,7 @@ export class BLERespositoryImpl implements BLERespository {
 
   constructor(
     private manager: BleManager,
-    private deviceStorageRepository: DeviceStorageRepository
+    // private deviceStorageRepository: DeviceStorageRepository
   ) {}
 
   scanForDevices(deviceType: DeviceType): Observable<ScannedBleDevice[]> {
@@ -75,8 +75,8 @@ export class BLERespositoryImpl implements BLERespository {
               this.manager.stopDeviceScan();
               subscription.remove();
               try {
-                const connected = await device.connect();
-                await this.deviceStorageRepository.saveConnectedDevice(connected.id, deviceType);
+                await device.connect();
+                // await this.deviceStorageRepository.saveConnectedDevice(connected.id, deviceType);
                 resolve(true);
               } catch (e) {
                 reject(e);
@@ -96,11 +96,26 @@ export class BLERespositoryImpl implements BLERespository {
     });
   }
 
-  async connectToDevice(address: string, deviceType: DeviceType): Promise<boolean> {
+  async connectToDevice(address: string): Promise<boolean> {
     try {
-      const device = await this.manager.connectToDevice(address);
-      await this.deviceStorageRepository.saveConnectedDevice(device.id, deviceType);
+      await this.manager.connectToDevice(address);
+      // await this.deviceStorageRepository.saveConnectedDevice(device.id, deviceType);
       return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async isDeviceConnected(address: string): Promise<boolean> {
+    try {
+      const device = await this.manager.devices([address]);
+      if (device && device.length > 0) {
+        // react-native-ble-plx Device object has isConnected method
+        if (typeof device[0].isConnected === 'function') {
+          return await device[0].isConnected();
+        }
+      }
+      return false;
     } catch {
       return false;
     }

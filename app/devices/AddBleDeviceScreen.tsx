@@ -5,7 +5,7 @@ import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { container } from '@/src/application/di';
 import type { ScannedBleDevice } from '@/src/domain/repository/BLERespository';
-import { fromString } from '@/src/domain/model/device/Device';
+import { fromString } from '@/src/domain/model/device/DeviceType';
 import { DeviceCatalog } from '@/src/domain/model/device/DeviceCatalog';
 import { BLEConnectionProps } from '@/src/domain/model/device/ConnectionType';
 
@@ -76,7 +76,7 @@ export default function AddBleDeviceScreen() {
     console.log('Effect:', deviceType);
     if (!deviceType) return;
     setLoading(true);
-    const subscription = container.scanForBLEDevicesUseCase.execute(deviceType).subscribe({
+    const subscription = container.ble.scanForBLEDevicesUseCase.execute(deviceType).subscribe({
       next: (devices) => {
         console.log('Devices:', devices);
         setScannedDevices(devices);
@@ -92,7 +92,7 @@ export default function AddBleDeviceScreen() {
     console.log('Attempting to connect to device:', address);
     setConnectingId(address);
     try {
-      const success = await container.connectToBLEDeviceUseCase.execute(address, deviceType);
+      const success = await container.ble.connectToBLEDeviceUseCase.execute(address, deviceType);
       if (success) {
         console.log('Successfully connected to device:', address);
         Alert.alert('Success', 'Connected to device!');

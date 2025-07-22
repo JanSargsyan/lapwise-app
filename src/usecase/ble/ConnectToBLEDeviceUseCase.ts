@@ -1,4 +1,4 @@
-import { DeviceType } from '@/src/domain/model/device/Device';
+import { DeviceType } from '@/src/domain/model/device/DeviceType';
 import { BLERespository } from '@/src/domain/repository/BLERespository';
 
 export class ConnectToBLEDeviceUseCase {
