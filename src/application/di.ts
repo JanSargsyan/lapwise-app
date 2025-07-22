@@ -11,7 +11,7 @@ import { ScanForBLEDevicesUseCase } from '@/src/usecase/ble/ScanForBLEDevicesUse
 import { AddDeviceToCacheUseCase } from '@/src/usecase/cache/AddDeviceToCacheUseCase';
 import { GetCachedDevicesUseCase } from '@/src/usecase/cache/GetCachedDevicesUseCase';
 import { RemoveDeviceFromCacheUseCase } from '@/src/usecase/cache/RemoveDeviceFromCacheUseCase';
-import { IsBLEDeviceConnectedUseCase } from '@/src/usecase/ble/IsBleDeviceConnectedUseCase';
+import { IsBLEDeviceConnectedUseCase } from '@/src/usecase/ble/IsBLEDeviceConnectedUseCase';
 
 const btManager = new BleManager();
 

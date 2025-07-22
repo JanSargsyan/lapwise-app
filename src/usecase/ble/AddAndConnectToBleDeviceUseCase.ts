@@ -1,6 +1,6 @@
 import type { Device } from '@/src/domain/model/device/Device';
-import { AddDeviceToCacheUseCase } from '../cache/AddDeviceToCacheUseCase';
-import { ConnectToBLEDeviceUseCase } from './ConnectToBLEDeviceUseCase';
+import { AddDeviceToCacheUseCase } from '@/src/usecase/cache/AddDeviceToCacheUseCase';
+import { ConnectToBLEDeviceUseCase } from '@/src/usecase/ble/ConnectToBLEDeviceUseCase';
 
 export class AddAndConnectToBleDeviceUseCase {
   constructor(
