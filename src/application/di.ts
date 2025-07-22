@@ -2,13 +2,15 @@ import { BleManager } from 'react-native-ble-plx';
 import { RaceBoxRepositoryImpl } from '@/src/data/repository/RaceBoxRepositoryImpl';
 import { DeviceStorageRepositoryImpl } from '@/src/data/repository/DeviceStorageRepository';
 import { BLERespositoryImpl } from '@/src/data/repository/BLERespositoryImpl';
-import { ConnectToBLEDeviceUseCase } from '@/src/usecase/ConnectToBLEDeviceUseCase';
+import { ConnectToBLEDeviceUseCase } from '@/src/usecase/ble/ConnectToBLEDeviceUseCase';
 import { GetLiveDataUseCase } from '@/src/usecase/GetLiveDataUseCase';
-import { GetConnectedDeviceInfoUseCase } from '@/src/usecase/GetConnectedDeviceInfoUseCase';
+import { GetConnectedDeviceInfoUseCase } from '@/src/usecase/ble/GetConnectedDeviceInfoUseCase';
 import { DeviceRepositoryProvider } from '@/src/domain/DeviceRepositoryProvider';
 import BleService from '@/src/data/service/BleService';
-import { ScanForBLEDevicesUseCase } from '@/src/usecase/ScanForBLEDevicesUseCase';
-import { AddDeviceToCacheUseCase } from '@/src/usecase/AddDeviceToCacheUseCase';
+import { ScanForBLEDevicesUseCase } from '@/src/usecase/ble/ScanForBLEDevicesUseCase';
+import { AddDeviceToCacheUseCase } from '@/src/usecase/cache/AddDeviceToCacheUseCase';
+import { GetCachedDevicesUseCase } from '@/src/usecase/cache/GetCachedDevicesUseCase';
+import { RemoveDeviceFromCacheUseCase } from '@/src/usecase/cache/RemoveDeviceFromCacheUseCase';
 
 const btManager = new BleManager();
 
@@ -25,6 +27,8 @@ const deviceRepositoryProvider = new DeviceRepositoryProvider(deviceStorageRepos
 // TODO: Add repository provider that will inject racebox/mock repository to the use cases
 const getLiveDataUseCase = new GetLiveDataUseCase(deviceRepositoryProvider);
 const getConnectedDeviceInfoUseCase = new GetConnectedDeviceInfoUseCase(deviceRepositoryProvider);
+const getCachedDevicesUseCase = new GetCachedDevicesUseCase(deviceStorageRepository);
+const removeDeviceFromCacheUseCase = new RemoveDeviceFromCacheUseCase(deviceStorageRepository);
 
 const connectToBLEDeviceUseCase = new ConnectToBLEDeviceUseCase(bleRepository);
 const scanForBLEDevicesUseCase = new ScanForBLEDevicesUseCase(bleRepository);
@@ -36,5 +40,7 @@ export const container = {
     getConnectedDeviceInfoUseCase: getConnectedDeviceInfoUseCase,
     connectToBLEDeviceUseCase: connectToBLEDeviceUseCase,
     scanForBLEDevicesUseCase: scanForBLEDevicesUseCase,
-    addDeviceToCacheUseCase: addDeviceToCacheUseCase
+    addDeviceToCacheUseCase: addDeviceToCacheUseCase,
+    getCachedDevicesUseCase: getCachedDevicesUseCase,
+    removeDeviceFromCacheUseCase: removeDeviceFromCacheUseCase
 }

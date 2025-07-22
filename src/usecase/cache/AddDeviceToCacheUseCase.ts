@@ -5,11 +5,13 @@ export class AddDeviceToCacheUseCase {
   constructor(private deviceStorageRepository: DeviceStorageRepository) {}
 
   async execute(device: Device): Promise<Device | null> {
-    const devices = await this.deviceStorageRepository.getDevices();
-    if (devices.some(d => d.id === device.id)) {
-      return null;
+    try {
+      return await this.deviceStorageRepository.addDevice(device);
+    } catch (e) {
+      if (e instanceof Error && e.message === 'Device already exists in cache') {
+        return null;
+      }
+      throw e;
     }
-    await this.deviceStorageRepository.saveDevices([...devices, device]);
-    return device;
   }
 } 
