@@ -2,7 +2,7 @@ export type ConnectionType = "BLE" | "WiFi" | "Mock" | "Phone";
 
 export interface BLEConnectionProps {
   advertisedNamePrefix: string;
-  serviceUUIDs?: string[];
+  address?: string;
 }
 
 export interface WiFiConnectionProps {

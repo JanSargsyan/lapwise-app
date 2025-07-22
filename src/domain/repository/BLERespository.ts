@@ -11,4 +11,5 @@ export interface ScannedBleDevice {
   id: string;
   name: string;
   rssi: number;
+  address: string;
 } 

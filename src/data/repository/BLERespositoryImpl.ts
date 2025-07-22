@@ -1,113 +1,55 @@
-import { BleManager, Device as BlePlxDevice } from 'react-native-ble-plx';
+import { BleManager } from 'react-native-ble-plx';
 import type { BLERespository, ScannedBleDevice } from '@/src/domain/repository/BLERespository';
 import type { DeviceStorageRepository } from '@/src/domain/repository/DeviceStorageRepository';
 import { DeviceType } from '@/src/domain/model/device/Device';
-import { Observable, BehaviorSubject, interval, Subscription } from 'rxjs';
+import { Observable } from 'rxjs';
 import { DeviceCatalog } from '@/src/domain/model/device/DeviceCatalog';
 import { BLEConnectionProps } from '@/src/domain/model/device/ConnectionType';
 
+
 export class BLERespositoryImpl implements BLERespository {
-  private discoveredDevices: Map<string, { device: BlePlxDevice; lastSeen: number }> = new Map();
-  private devicesSubject = new BehaviorSubject<ScannedBleDevice[]>([]);
-  private expiryIntervalSub?: Subscription;
-  private scanSubscription?: { remove: () => void };
-  private scanning: boolean = false;
 
   constructor(
     private manager: BleManager,
     private deviceStorageRepository: DeviceStorageRepository
   ) {}
 
-  /**
-   * Scans for BLE devices, emitting a map of { [address]: label } for devices seen in the last 5 seconds.
-   * Devices are removed if not rediscovered in 5 seconds.
-   * Scanning only starts when BLE is powered on.
-   */
   scanForDevices(deviceType: DeviceType): Observable<ScannedBleDevice[]> {
-    // Stop any previous scan and clear state
-    this.stopScanAndCleanup();
-    this.discoveredDevices.clear();
-    this.devicesSubject.next([]);
-    this.scanning = true;
-
-    // Helper: emit current devices as ScannedBleDevice[]
-    const emitDevices = () => {
-      const now = Date.now();
-      const active: ScannedBleDevice[] = [];
-      this.discoveredDevices.forEach(({ device, lastSeen }) => {
-        if (now - lastSeen <= 5000) {
-          active.push({
-            id: device.id,
-            name: device.name || device.id,
-            rssi: device.rssi ?? 0,
+    return new Observable<ScannedBleDevice[]>(subscriber => {
+      const devices: Record<string, ScannedBleDevice> = {};
+      const subscription = this.manager.onStateChange((state) => {
+        if (state === 'PoweredOn') {
+          this.manager.startDeviceScan(null, null, (error, device) => {
+            if (error) {
+              subscriber.error(error);
+              this.manager.stopDeviceScan();
+              subscription.remove();
+              return;
+            }
+            if (
+              device &&
+              device.name &&
+              device.name.startsWith((DeviceCatalog[deviceType].connectionProps as BLEConnectionProps).advertisedNamePrefix)
+            ) {
+              devices[device.id] = {
+                id: device.id,
+                name: device.name,
+                rssi: device.rssi ?? 0,
+                address: device.id, // BLE device object does not have a separate address property
+              };
+              subscriber.next(Object.values(devices));
+            }
           });
         }
-      });
-      this.devicesSubject.next(active);
-    };
+      }, true);
 
-    // Start expiry interval
-    this.expiryIntervalSub = interval(1000).subscribe(() => {
-      const now = Date.now();
-      let changed = false;
-      for (const [id, { lastSeen }] of this.discoveredDevices.entries()) {
-        if (now - lastSeen > 20000) {
-          this.discoveredDevices.delete(id);
-          changed = true;
-        }
-      }
-      if (changed) emitDevices();
-    });
-
-    // Wait for BLE powered on, then scan
-    this.scanSubscription = this.manager.onStateChange((state) => {
-      if (state === 'PoweredOn' && this.scanning) {
-        this.manager.startDeviceScan(null, null, (error, device) => {
-          
-          if (error) {
-            this.stopScanAndCleanup();
-            this.devicesSubject.error(error);
-            return;
-          }
-          if (device && device.id) {
-            const advertisedNamePrefix = (DeviceCatalog[deviceType].connectionProps as BLEConnectionProps).advertisedNamePrefix;
-            if (device.name?.startsWith(advertisedNamePrefix)) {
-              this.discoveredDevices.set(device.id, { device, lastSeen: Date.now() });
-              emitDevices();
-            }
-          }
-        });
-      }
-    }, true);
-
-    // Return observable that cleans up on unsubscribe
-    return new Observable<ScannedBleDevice[]>(subscriber => {
-      const sub = this.devicesSubject.subscribe(subscriber);
+      // Cleanup logic on unsubscribe
       return () => {
-        sub.unsubscribe();
-        this.stopScanAndCleanup();
+        this.manager.stopDeviceScan();
+        subscription.remove();
       };
     });
   }
-
-  /**
-   * Stops scanning and cleans up intervals/subscriptions.
-   */
-  private stopScanAndCleanup() {
-    if (this.scanning) {
-      this.manager.stopDeviceScan();
-      this.scanning = false;
-    }
-    if (this.expiryIntervalSub) {
-      this.expiryIntervalSub.unsubscribe();
-      this.expiryIntervalSub = undefined;
-    }
-    if (this.scanSubscription) {
-      this.scanSubscription.remove();
-      this.scanSubscription = undefined;
-    }
-  }
-
 
   async scanAndConnect(deviceType: DeviceType): Promise<boolean> {
     return new Promise((resolve, reject) => {

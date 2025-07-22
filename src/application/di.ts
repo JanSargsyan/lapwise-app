@@ -8,6 +8,7 @@ import { GetConnectedDeviceInfoUseCase } from '@/src/usecase/GetConnectedDeviceI
 import { DeviceRepositoryProvider } from '@/src/domain/DeviceRepositoryProvider';
 import BleService from '@/src/data/service/BleService';
 import { ScanForBLEDevicesUseCase } from '@/src/usecase/ScanForBLEDevicesUseCase';
+import { AddDeviceToCacheUseCase } from '@/src/usecase/AddDeviceToCacheUseCase';
 
 const btManager = new BleManager();
 
@@ -27,11 +28,13 @@ const getConnectedDeviceInfoUseCase = new GetConnectedDeviceInfoUseCase(deviceRe
 
 const connectToBLEDeviceUseCase = new ConnectToBLEDeviceUseCase(bleRepository);
 const scanForBLEDevicesUseCase = new ScanForBLEDevicesUseCase(bleRepository);
+const addDeviceToCacheUseCase = new AddDeviceToCacheUseCase(deviceStorageRepository);
 
 
 export const container = {
     getLiveDataUseCase: getLiveDataUseCase,
     getConnectedDeviceInfoUseCase: getConnectedDeviceInfoUseCase,
     connectToBLEDeviceUseCase: connectToBLEDeviceUseCase,
-    scanForBLEDevicesUseCase: scanForBLEDevicesUseCase
+    scanForBLEDevicesUseCase: scanForBLEDevicesUseCase,
+    addDeviceToCacheUseCase: addDeviceToCacheUseCase
 }

@@ -87,20 +87,25 @@ export default function AddBleDeviceScreen() {
     return () => subscription.unsubscribe();
   }, [params.device, permissionsGranted]);
 
-  const handleConnect = async (id: string) => {
+  const handleConnect = async (address: string) => {
     if (!deviceType) return;
-    setConnectingId(id);
+    console.log('Attempting to connect to device:', address);
+    setConnectingId(address);
     try {
-      const success = await container.connectToBLEDeviceUseCase.execute(id, deviceType);
+      const success = await container.connectToBLEDeviceUseCase.execute(address, deviceType);
       if (success) {
+        console.log('Successfully connected to device:', address);
         Alert.alert('Success', 'Connected to device!');
       } else {
+        console.log('Failed to connect to device:', address);
         Alert.alert('Connection Failed', 'Could not connect to the device.');
       }
-    } catch {
+    } catch (e) {
+      console.log('Error connecting to device:', address, e);
       Alert.alert('Connection Error', 'An error occurred while connecting.');
     } finally {
       setConnectingId(null);
+      console.log('Connection attempt finished for device:', address);
     }
   };
 
@@ -129,11 +134,11 @@ export default function AddBleDeviceScreen() {
             <Text style={styles.deviceName}>{item.name}</Text>
             <Text style={styles.deviceRssi}>RSSI: {item.rssi}</Text>
             <TouchableOpacity
-              style={[styles.connectButton, connectingId === item.id && styles.connectButtonDisabled]}
-              onPress={() => handleConnect(item.id)}
+              style={[styles.connectButton, connectingId === item.address && styles.connectButtonDisabled]}
+              onPress={() => handleConnect(item.address)}
               disabled={!!connectingId}
             >
-              {connectingId === item.id ? (
+              {connectingId === item.address ? (
                 <ActivityIndicator color="#fff" />
               ) : (
                 <Text style={styles.connectButtonText}>Connect</Text>
