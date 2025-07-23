@@ -1,7 +1,8 @@
-import React, { useState, useLayoutEffect } from 'react';
+import React, { useState, useLayoutEffect, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useLocalSearchParams } from 'expo-router';
+import { container } from '@/src/application/di';
 
 export default function RaceBoxScreen() {
   const params = useLocalSearchParams();
@@ -14,12 +15,22 @@ export default function RaceBoxScreen() {
   const serialNumber = getParam(params.id, 'RBX123456');
   const model = getParam(params.type, 'Mini S');
   const manufacturer = getParam(params.manufacturer, '');
-  const connected = false;
+  const [connected, setConnected] = useState(false);
   const recording = false;
   const battery = '85%';
   const gps = 'Good';
 
   const navigation = useNavigation();
+
+  useEffect(() => {
+    let isActive = true;
+    if (serialNumber) {
+      container.ble.isBLEDeviceConnectedUseCase.execute(serialNumber).then(isConn => {
+        if (isActive) setConnected(isConn);
+      });
+    }
+    return () => { isActive = false; };
+  }, [serialNumber]);
 
   const handleEditName = () => {
     Alert.prompt('Edit Device Name', 'Enter new device name:', [

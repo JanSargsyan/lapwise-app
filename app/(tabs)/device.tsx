@@ -20,12 +20,28 @@ export default function DeviceScreen() {
   const navigation = useNavigation();
   const router = useRouter();
   const [cachedDevices, setCachedDevices] = useState<Device[]>([]);
+  const [deviceConnectionStates, setDeviceConnectionStates] = useState<Record<string, boolean>>({});
 
   useFocusEffect(
     useCallback(() => {
+      let isActive = true;
       container.cache.getCachedDevicesUseCase.execute().then(devices => {
+        if (!isActive) return;
         setCachedDevices(devices);
+        // Check connection state for all devices (including phone)
+        const allDevices: Device[] = [PHONE_DEVICE, ...devices];
+        Promise.all(
+          allDevices.map(device =>
+            container.ble.isBLEDeviceConnectedUseCase.execute(device.id).then(
+              connected => [device.id, connected] as [string, boolean]
+            )
+          )
+        ).then(results => {
+          if (!isActive) return;
+          setDeviceConnectionStates(Object.fromEntries(results));
+        });
       });
+      return () => { isActive = false; };
     }, [])
   );
 
@@ -55,16 +71,22 @@ export default function DeviceScreen() {
     }
   };
 
-  const renderDevice = ({ item }: { item: Device }) => (
-    <TouchableOpacity onPress={() => handleDevicePress(item)}>
-      <View style={[styles.deviceCard, { backgroundColor: Colors[colorScheme ?? 'light'].background, borderColor: Colors[colorScheme ?? 'light'].tint }]}> 
-        <View style={styles.deviceInfo}>
-          <Text style={[styles.deviceName, { color: Colors[colorScheme ?? 'light'].text }]}>{item.label}</Text>
-          <Text style={[styles.deviceDescription, { color: Colors[colorScheme ?? 'light'].text, opacity: 0.7 }]}>{item.manufacturer}</Text>
+  const renderDevice = ({ item }: { item: Device }) => {
+    const isConnected = deviceConnectionStates[item.id];
+    return (
+      <TouchableOpacity onPress={() => handleDevicePress(item)}>
+        <View style={[styles.deviceCard, { backgroundColor: Colors[colorScheme ?? 'light'].background, borderColor: Colors[colorScheme ?? 'light'].tint }]}> 
+          <View style={styles.deviceInfo}>
+            <Text style={[styles.deviceName, { color: Colors[colorScheme ?? 'light'].text }]}>{item.label}</Text>
+            <Text style={[styles.deviceDescription, { color: Colors[colorScheme ?? 'light'].text, opacity: 0.7 }]}>{item.manufacturer}</Text>
+            <Text style={{ fontSize: 13, color: isConnected ? 'green' : 'red', marginTop: 6 }}>
+              {isConnected ? 'Connected' : 'Disconnected'}
+            </Text>
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   const allDevices: Device[] = [PHONE_DEVICE, ...cachedDevices];
 

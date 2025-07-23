@@ -101,8 +101,16 @@ export class BLERespositoryImpl implements BLERespository {
     try {
       await this.manager.connectToDevice(address);
       return true;
-    } catch(e) {
-      console.error('Failed to connect to device', e, e?.reason);
+    } catch {
+      return false;
+    }
+  }
+
+  async disconnectFromDevice(address: string): Promise<boolean> {
+    try {
+      await this.manager.cancelDeviceConnection(address);
+      return true;
+    } catch {
       return false;
     }
   }

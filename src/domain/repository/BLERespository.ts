@@ -5,6 +5,7 @@ export interface BLERespository {
   scanAndConnect(deviceType: DeviceType): Promise<boolean>;
   scanForDevices(deviceType: DeviceType): Observable<ScannedBleDevice[]>;
   connectToDevice(address: string): Promise<boolean>;
+  disconnectFromDevice(address: string): Promise<boolean>;
   isDeviceConnected(address: string): Promise<boolean>;
 }
 
