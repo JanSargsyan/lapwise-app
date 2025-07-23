@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { StyleSheet, View, Text, FlatList } from 'react-native';
+import { StyleSheet, View, Text, FlatList, TouchableOpacity } from 'react-native';
 import { useNavigation, useRouter, useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import Colors from '@/constants/Colors';
@@ -44,14 +44,26 @@ export default function DeviceScreen() {
     });
   }, [navigation, colorScheme]);
 
+  const handleDevicePress = (device: Device) => {
+    switch (device.id) {
+      case 'racebox_mini':
+      case 'racebox_micro':
+        router.push({ pathname: '/RaceBoxScreen', params: { id: device.id } });
+        break;
+      default:
+        alert('This device type is not implemented yet.');
+    }
+  };
+
   const renderDevice = ({ item }: { item: Device }) => (
-    <View style={[styles.deviceCard, { backgroundColor: Colors[colorScheme ?? 'light'].background, borderColor: Colors[colorScheme ?? 'light'].tint }]}> 
-      <View style={styles.deviceInfo}>
-        <Text style={[styles.deviceName, { color: Colors[colorScheme ?? 'light'].text }]}>{item.label}</Text>
-        <Text style={[styles.deviceDescription, { color: Colors[colorScheme ?? 'light'].text, opacity: 0.7 }]}>{item.manufacturer}</Text>
-        <Text style={{ fontSize: 11, color: '#888', marginTop: 6 }}>{JSON.stringify(item, null, 2)}</Text>
+    <TouchableOpacity onPress={() => handleDevicePress(item)}>
+      <View style={[styles.deviceCard, { backgroundColor: Colors[colorScheme ?? 'light'].background, borderColor: Colors[colorScheme ?? 'light'].tint }]}> 
+        <View style={styles.deviceInfo}>
+          <Text style={[styles.deviceName, { color: Colors[colorScheme ?? 'light'].text }]}>{item.label}</Text>
+          <Text style={[styles.deviceDescription, { color: Colors[colorScheme ?? 'light'].text, opacity: 0.7 }]}>{item.manufacturer}</Text>
+        </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   const allDevices: Device[] = [PHONE_DEVICE, ...cachedDevices];
