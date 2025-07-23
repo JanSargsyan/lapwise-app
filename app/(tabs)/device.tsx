@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { StyleSheet, View, Text, FlatList } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRouter } from 'expo-router';
+import { useNavigation, useRouter, useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -22,11 +21,13 @@ export default function DeviceScreen() {
   const router = useRouter();
   const [cachedDevices, setCachedDevices] = useState<Device[]>([]);
 
-  useEffect(() => {
-    container.cache.getCachedDevicesUseCase.execute().then(devices => {
-      setCachedDevices(devices);
-    });
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      container.cache.getCachedDevicesUseCase.execute().then(devices => {
+        setCachedDevices(devices);
+      });
+    }, [])
+  );
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
@@ -48,6 +49,7 @@ export default function DeviceScreen() {
       <View style={styles.deviceInfo}>
         <Text style={[styles.deviceName, { color: Colors[colorScheme ?? 'light'].text }]}>{item.label}</Text>
         <Text style={[styles.deviceDescription, { color: Colors[colorScheme ?? 'light'].text, opacity: 0.7 }]}>{item.manufacturer}</Text>
+        <Text style={{ fontSize: 11, color: '#888', marginTop: 6 }}>{JSON.stringify(item, null, 2)}</Text>
       </View>
     </View>
   );
