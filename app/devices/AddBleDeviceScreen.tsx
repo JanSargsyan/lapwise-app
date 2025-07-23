@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Platform, PermissionsAndroid, Alert, Linking, TouchableOpacity } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { container } from '@/src/application/di';
@@ -12,6 +12,7 @@ import { BLEConnectionProps } from '@/src/domain/model/device/ConnectionType';
 export default function AddBleDeviceScreen() {
   const colorScheme = useColorScheme();
   const params = useLocalSearchParams<{ device: string }>();
+  const router = useRouter();
   const deviceType = fromString(params.device);
   const [scannedDevices, setScannedDevices] = useState<ScannedBleDevice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,15 +90,23 @@ export default function AddBleDeviceScreen() {
 
   const handleConnect = async (address: string) => {
     if (!deviceType) return;
-    console.log('Attempting to connect to device:', address);
     setConnectingId(address);
     try {
-      const success = await container.ble.connectToBLEDeviceUseCase.execute(address, deviceType);
+      const success = await container.ble.addAndConnectToBleDeviceUseCase.execute(address, deviceType);
       if (success) {
-        console.log('Successfully connected to device:', address);
         Alert.alert('Success', 'Connected to device!');
+        if (
+          deviceType === 'racebox_mini' ||
+          deviceType === 'racebox_micro'
+        ) {
+          router.replace({
+            pathname: '/RaceBoxScreen',
+            params: {
+              id: address
+            }
+          });
+        }
       } else {
-        console.log('Failed to connect to device:', address);
         Alert.alert('Connection Failed', 'Could not connect to the device.');
       }
     } catch (e) {

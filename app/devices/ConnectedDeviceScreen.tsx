@@ -5,6 +5,8 @@ import { container } from '@/src/application/di';
 import type { DeviceInfo } from '@/src/domain/model/device/DeviceInfo';
 import { Subscription } from 'rxjs';
 
+// TODO: delete this file
+
 function renderLiveData(liveData: DeviceData | null) {
   if (!liveData) return <Text>No live data yet.</Text>;
 

@@ -1,13 +1,19 @@
 import React, { useState, useLayoutEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from 'expo-router';
+import { useNavigation, useLocalSearchParams } from 'expo-router';
 
 export default function RaceBoxScreen() {
-  const [deviceName, setDeviceName] = useState('RaceBox Mini');
-  // Dummy values for UI
-  const serialNumber = 'RBX123456';
-  const model = 'Mini S';
+  const params = useLocalSearchParams();
+  // Helper to get param as string
+  function getParam(param: unknown, fallback: string) {
+    if (Array.isArray(param)) return param[0] || fallback;
+    return param || fallback;
+  }
+  const [deviceName, setDeviceName] = useState(getParam(params.label, getParam(params.name, 'RaceBox Mini')));
+  const serialNumber = getParam(params.id, 'RBX123456');
+  const model = getParam(params.type, 'Mini S');
+  const manufacturer = getParam(params.manufacturer, '');
   const connected = false;
   const recording = false;
   const battery = '85%';
@@ -40,6 +46,7 @@ export default function RaceBoxScreen() {
           <Text style={styles.infoLabel}>Name: <Text style={styles.infoValue}>{deviceName}</Text></Text>
           <Text style={styles.infoLabel}>S/N: <Text style={styles.infoValue}>{serialNumber}</Text></Text>
           <Text style={styles.infoLabel}>Model: <Text style={styles.infoValue}>{model}</Text></Text>
+          {manufacturer ? <Text style={styles.infoLabel}>Manufacturer: <Text style={styles.infoValue}>{manufacturer}</Text></Text> : null}
         </View>
 
         {/* Status */}

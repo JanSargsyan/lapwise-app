@@ -26,6 +26,7 @@ export class BLERespositoryImpl implements BLERespository {
               subscription.remove();
               return;
             }
+            
             if (
               device &&
               device.name &&
@@ -99,9 +100,9 @@ export class BLERespositoryImpl implements BLERespository {
   async connectToDevice(address: string): Promise<boolean> {
     try {
       await this.manager.connectToDevice(address);
-      // await this.deviceStorageRepository.saveConnectedDevice(device.id, deviceType);
       return true;
-    } catch {
+    } catch(e) {
+      console.error('Failed to connect to device', e, e?.reason);
       return false;
     }
   }

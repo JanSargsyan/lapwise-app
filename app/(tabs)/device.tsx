@@ -6,21 +6,21 @@ import { MaterialIcons } from '@expo/vector-icons';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { container } from '@/src/application/di';
+import { Device } from '@/src/domain/model/device/Device';
 
-const PHONE_DEVICE = {
+const PHONE_DEVICE: Device = {
   id: 'phone',
-  name: 'Phone',
-  type: 'Mobile',
-  icon: <Ionicons name="phone-portrait" size={28} color="#2196f3" />,
-  description: 'This device',
-  permanent: true,
+  label: 'Phone',
+  manufacturer: 'Use This Phone',
+  connectionType: 'Phone',
+  connectionProps: {},
 };
 
 export default function DeviceScreen() {
   const colorScheme = useColorScheme();
   const navigation = useNavigation();
   const router = useRouter();
-  const [cachedDevices, setCachedDevices] = useState<any[]>([]);
+  const [cachedDevices, setCachedDevices] = useState<Device[]>([]);
 
   useEffect(() => {
     container.cache.getCachedDevicesUseCase.execute().then(devices => {
@@ -43,39 +43,22 @@ export default function DeviceScreen() {
     });
   }, [navigation, colorScheme]);
 
-  const renderDevice = ({ item }: { item: any }) => (
+  const renderDevice = ({ item }: { item: Device }) => (
     <View style={[styles.deviceCard, { backgroundColor: Colors[colorScheme ?? 'light'].background, borderColor: Colors[colorScheme ?? 'light'].tint }]}> 
-      <View style={styles.deviceIcon}>{item.icon}</View>
       <View style={styles.deviceInfo}>
-        <Text style={[styles.deviceName, { color: Colors[colorScheme ?? 'light'].text }]}>{item.name}</Text>
-        <Text style={[styles.deviceType, { color: Colors[colorScheme ?? 'light'].tint }]}>{item.type}</Text>
-        <Text style={[styles.deviceDescription, { color: Colors[colorScheme ?? 'light'].text, opacity: 0.7 }]}>{item.description}</Text>
+        <Text style={[styles.deviceName, { color: Colors[colorScheme ?? 'light'].text }]}>{item.label}</Text>
+        <Text style={[styles.deviceDescription, { color: Colors[colorScheme ?? 'light'].text, opacity: 0.7 }]}>{item.manufacturer}</Text>
       </View>
-      {item.permanent && (
-        <View style={styles.permanentBadge}>
-          <Text style={styles.permanentBadgeText}>Permanent</Text>
-        </View>
-      )}
     </View>
   );
 
-  // Map cached devices to display format
-  const mappedCachedDevices = cachedDevices.map(device => ({
-    id: device.id,
-    name: device.label || device.name || device.id,
-    type: device.connectionType || 'Unknown',
-    icon: <Ionicons name="hardware-chip-outline" size={28} color="#2196f3" />,
-    description: device.manufacturer || '',
-    permanent: false,
-  }));
-
-  const allDevices = [PHONE_DEVICE, ...mappedCachedDevices];
+  const allDevices: Device[] = [PHONE_DEVICE, ...cachedDevices];
 
   return (
     <View style={[styles.safeArea, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}> 
       <FlatList
         data={allDevices}
-        keyExtractor={item => item.id}
+        keyExtractor={(_, index) => index.toString()}
         renderItem={renderDevice}
         contentContainerStyle={styles.deviceList}
       />
