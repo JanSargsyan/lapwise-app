@@ -1,27 +1,32 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Text, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
+import { container } from '@/src/application/di';
 
-const ADDED_DEVICES = [
-  {
-    id: 'phone',
-    name: 'Phone',
-    type: 'Mobile',
-    icon: <Ionicons name="phone-portrait" size={28} color="#2196f3" />,
-    description: 'This device',
-    permanent: true,
-  },
-  // Future devices will be added here
-];
+const PHONE_DEVICE = {
+  id: 'phone',
+  name: 'Phone',
+  type: 'Mobile',
+  icon: <Ionicons name="phone-portrait" size={28} color="#2196f3" />,
+  description: 'This device',
+  permanent: true,
+};
 
 export default function DeviceScreen() {
   const colorScheme = useColorScheme();
   const navigation = useNavigation();
   const router = useRouter();
+  const [cachedDevices, setCachedDevices] = useState<any[]>([]);
+
+  useEffect(() => {
+    container.cache.getCachedDevicesUseCase.execute().then(devices => {
+      setCachedDevices(devices);
+    });
+  }, []);
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
@@ -38,7 +43,7 @@ export default function DeviceScreen() {
     });
   }, [navigation, colorScheme]);
 
-  const renderDevice = ({ item }: { item: typeof ADDED_DEVICES[0] }) => (
+  const renderDevice = ({ item }: { item: any }) => (
     <View style={[styles.deviceCard, { backgroundColor: Colors[colorScheme ?? 'light'].background, borderColor: Colors[colorScheme ?? 'light'].tint }]}> 
       <View style={styles.deviceIcon}>{item.icon}</View>
       <View style={styles.deviceInfo}>
@@ -54,10 +59,22 @@ export default function DeviceScreen() {
     </View>
   );
 
+  // Map cached devices to display format
+  const mappedCachedDevices = cachedDevices.map(device => ({
+    id: device.id,
+    name: device.label || device.name || device.id,
+    type: device.connectionType || 'Unknown',
+    icon: <Ionicons name="hardware-chip-outline" size={28} color="#2196f3" />,
+    description: device.manufacturer || '',
+    permanent: false,
+  }));
+
+  const allDevices = [PHONE_DEVICE, ...mappedCachedDevices];
+
   return (
     <View style={[styles.safeArea, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}> 
       <FlatList
-        data={ADDED_DEVICES}
+        data={allDevices}
         keyExtractor={item => item.id}
         renderItem={renderDevice}
         contentContainerStyle={styles.deviceList}
