@@ -11,4 +11,6 @@ export interface DeviceStorageRepository {
 
   // Add a single device, return added device or throw on error/duplicate
   addDevice(device: Device): Promise<Device>;
+  removeDevice(device: Device): Promise<void>;
+  updateDevice(device: Device): Promise<void>;
 } 

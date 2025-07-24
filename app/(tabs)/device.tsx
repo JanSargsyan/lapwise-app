@@ -66,7 +66,7 @@ export default function DeviceScreen() {
       case 'racebox_mini':
       case 'racebox_micro': { 
         const connectionProps = device.connectionProps as BLEConnectionProps;
-        router.push({ pathname: '/RaceBoxScreen', params: { address: connectionProps.address } });
+        router.push({ pathname: '/devices/racebox/RaceBoxScreen', params: { address: connectionProps.address } });
         break; }
       default:
         alert('This device type is not implemented yet.');

@@ -1,5 +1,5 @@
-import React, { useState, useLayoutEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert } from 'react-native';
+import React, { useState, useLayoutEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert, Modal, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { container } from '@/src/application/di';
@@ -13,6 +13,8 @@ export default function RaceBoxScreen() {
     return param || fallback;
   }
   const [deviceName, setDeviceName] = useState(getParam(params.label, getParam(params.name, 'RaceBox Mini')));
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editName, setEditName] = useState(deviceName);
   const serialNumber = getParam(params.id, 'RBX123456');
   const model = getParam(params.type, 'Mini S');
   const manufacturer = getParam(params.manufacturer, '');
@@ -54,11 +56,19 @@ export default function RaceBoxScreen() {
     }
   };
 
-  const handleEditName = () => {
-    Alert.prompt('Edit Device Name', 'Enter new device name:', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'OK', onPress: (text) => text && setDeviceName(text) },
-    ], 'plain-text', deviceName);
+  const handleEditName = useCallback(() => {
+    setEditName(deviceName);
+    setEditModalVisible(true);
+  }, [deviceName]);
+
+  const handleSaveEditName = () => {
+    setDeviceName(editName);
+    setEditModalVisible(false);
+    Alert.alert('Name updated', `Device name changed to: ${editName}`);
+  };
+
+  const handleDelete = () => {
+    Alert.alert('Delete', 'Device deleted');
   };
 
   useLayoutEffect(() => {
@@ -73,7 +83,7 @@ export default function RaceBoxScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView contentContainerStyle={[styles.container, { paddingBottom: 48 }]}>
         {/* Device Info */}
         <View style={styles.infoBox}>
           <Text style={styles.infoLabel}>Name: <Text style={styles.infoValue}>{deviceName}</Text></Text>
@@ -124,7 +134,40 @@ export default function RaceBoxScreen() {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Delete button at the bottom */}
+        <View style={styles.bottomButtonContainer}>
+          <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
+            <Text style={styles.deleteButtonText}>Delete Device</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
+
+      {/* Edit Name Modal */}
+      <Modal
+        visible={editModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setEditModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalLabel}>Edit Device Name</Text>
+            <TextInput
+              style={styles.input}
+              value={editName}
+              onChangeText={setEditName}
+              placeholder="Enter device name"
+            />
+            <TouchableOpacity style={styles.saveButton} onPress={handleSaveEditName}>
+              <Text style={styles.saveButtonText}>Save</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.cancelButton} onPress={() => setEditModalVisible(false)}>
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -243,5 +286,85 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 12,
     color: '#2196f3',
+  },
+  bottomButtonContainer: {
+    marginTop: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: 32, // Add extra bottom padding
+  },
+  deleteButton: {
+    backgroundColor: '#f44336',
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 8,
+    width: '100%',
+    maxWidth: 320,
+    alignItems: 'center',
+  },
+  deleteButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 24,
+    width: '90%',
+    maxWidth: 340,
+    alignItems: 'center',
+  },
+  input: {
+    width: '100%',
+    maxWidth: 320,
+    borderWidth: 1,
+    borderColor: '#2196f3',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 24,
+    backgroundColor: '#fff',
+  },
+  saveButton: {
+    backgroundColor: '#2196f3',
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 8,
+    marginBottom: 16,
+    width: '100%',
+    maxWidth: 320,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  cancelButton: {
+    backgroundColor: '#bbb',
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 8,
+    width: '100%',
+    maxWidth: 320,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  modalLabel: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 16,
+    color: '#222',
   },
 }); 

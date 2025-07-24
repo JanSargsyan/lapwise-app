@@ -43,4 +43,28 @@ export class DeviceStorageRepositoryImpl implements DeviceStorageRepository {
     }
     return device;
   }
+
+  async removeDevice(device: Device): Promise<void> {
+    const devices = await this.getDevices();
+    const filtered = devices.filter(d => d.id !== device.id);
+    try {
+      await this.saveDevices(filtered);
+    } catch {
+      throw new IOException('Failed to remove device from cache');
+    }
+  }
+
+  async updateDevice(device: Device): Promise<void> {
+    const devices = await this.getDevices();
+    const idx = devices.findIndex(d => d.id === device.id);
+    if (idx === -1) {
+      throw new Error('Device not found in cache');
+    }
+    devices[idx] = device;
+    try {
+      await this.saveDevices(devices);
+    } catch {
+      throw new IOException('Failed to update device in cache');
+    }
+  }
 } 
