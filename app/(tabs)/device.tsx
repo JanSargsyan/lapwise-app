@@ -6,10 +6,10 @@ import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { container } from '@/src/application/di';
 import { Device } from '@/src/domain/model/device/Device';
-import { BLEConnectionProps } from '@/src/domain/model/device/ConnectionType';
 
 const PHONE_DEVICE: Device = {
-  id: 'phone',
+  id: 'phone', // or '' if not persisted
+  type: 'phone',
   label: 'Phone',
   manufacturer: 'Use This Phone',
   connectionType: 'Phone',
@@ -21,7 +21,6 @@ export default function DeviceScreen() {
   const navigation = useNavigation();
   const router = useRouter();
   const [cachedDevices, setCachedDevices] = useState<Device[]>([]);
-  const [deviceConnectionStates, setDeviceConnectionStates] = useState<Record<string, boolean>>({});
 
   useFocusEffect(
     useCallback(() => {
@@ -29,18 +28,6 @@ export default function DeviceScreen() {
       container.cache.getCachedDevicesUseCase.execute().then(devices => {
         if (!isActive) return;
         setCachedDevices(devices);
-        // Check connection state for all devices (including phone)
-        const allDevices: Device[] = [PHONE_DEVICE, ...devices];
-        Promise.all(
-          allDevices.map(device =>
-            container.ble.isBLEDeviceConnectedUseCase.execute(device.id).then(
-              connected => [device.id, connected] as [string, boolean]
-            )
-          )
-        ).then(results => {
-          if (!isActive) return;
-          setDeviceConnectionStates(Object.fromEntries(results));
-        });
       });
       return () => { isActive = false; };
     }, [])
@@ -62,11 +49,10 @@ export default function DeviceScreen() {
   }, [navigation, colorScheme]);
 
   const handleDevicePress = (device: Device) => {
-    switch (device.id) {
+    switch (device.type) {
       case 'racebox_mini':
       case 'racebox_micro': { 
-        const connectionProps = device.connectionProps as BLEConnectionProps;
-        router.push({ pathname: '/devices/racebox/RaceBoxScreen', params: { address: connectionProps.address } });
+        router.push({ pathname: '/devices/racebox/RaceBoxScreen', params: { device: JSON.stringify(device) } });
         break; }
       default:
         alert('This device type is not implemented yet.');
@@ -74,16 +60,12 @@ export default function DeviceScreen() {
   };
 
   const renderDevice = ({ item }: { item: Device }) => {
-    const isConnected = deviceConnectionStates[item.id];
     return (
       <TouchableOpacity onPress={() => handleDevicePress(item)}>
         <View style={[styles.deviceCard, { backgroundColor: Colors[colorScheme ?? 'light'].background, borderColor: Colors[colorScheme ?? 'light'].tint }]}> 
           <View style={styles.deviceInfo}>
             <Text style={[styles.deviceName, { color: Colors[colorScheme ?? 'light'].text }]}>{item.label}</Text>
             <Text style={[styles.deviceDescription, { color: Colors[colorScheme ?? 'light'].text, opacity: 0.7 }]}>{item.manufacturer}</Text>
-            <Text style={{ fontSize: 13, color: isConnected ? 'green' : 'red', marginTop: 6 }}>
-              {isConnected ? 'Connected' : 'Disconnected'}
-            </Text>
           </View>
         </View>
       </TouchableOpacity>

@@ -9,14 +9,15 @@ class BleService {
     ) { }
 
     private async getDevice(): Promise<Device | null> {
-        const id = await this.deviceStorageRepository.getConnectedDeviceId();
-        if (!id) return null;
-        try {
-            const device = await this.manager.devices([id]);
-            return device && device.length > 0 ? device[0] : null;
-        } catch {
-            return null;
-        }
+        // const id = await this.deviceStorageRepository.getConnectedDeviceId();
+        // if (!id) return null;
+        // try {
+        //     const device = await this.manager.devices([id]);
+        //     return device && device.length > 0 ? device[0] : null;
+        // } catch {
+        //     return null;
+        // }
+        return null
     }
 
     async getConnectedDevice(): Promise<Device> {

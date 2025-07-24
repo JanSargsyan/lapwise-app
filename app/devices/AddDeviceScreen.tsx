@@ -5,7 +5,7 @@ import { useNavigation, useRouter } from 'expo-router';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 
-const devices = Object.values(DeviceCatalog).filter(device => device.id !== 'phone');
+const devices = Object.values(DeviceCatalog).filter(device => device.type !== 'phone');
 const manufacturers = Array.from(new Set(devices.map(d => d.manufacturer).filter(Boolean)));
 
 export default function AddDevicePage() {
@@ -95,16 +95,16 @@ export default function AddDevicePage() {
       <StepTabs />
       <FlatList
         data={filteredDevices}
-        keyExtractor={item => item.id}
+        keyExtractor={item => item.type}
         renderItem={({ item, index }) => (
           <TouchableOpacity
             style={[styles.deviceRow, index === filteredDevices.length - 1 && styles.deviceRowLast]}
             onPress={() => {
               if (item.connectionType === 'BLE') {
-                router.push({ pathname: '/devices/AddBleDeviceScreen', params: { device: item.id } });
+                router.push({ pathname: '/devices/AddBleDeviceScreen', params: { device: item.type } });
               }
               if (item.connectionType === 'WiFi') {
-                router.push({ pathname: '/devices/AddWifiDeviceScreen', params: { device: item.id } });
+                router.push({ pathname: '/devices/AddWifiDeviceScreen', params: { device: item.type } });
               }
             }}
             activeOpacity={0.7}

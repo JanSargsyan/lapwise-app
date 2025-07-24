@@ -1,9 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { DeviceStorageRepository } from '@/src/domain/repository/DeviceStorageRepository';
 import { Device } from '@/src/domain/model/device/Device';
+import { getDeviceId } from '@/src/data/util/DeviceUtil';
 
 const CACHED_DEVICES_KEY = 'cachedDevices';
 
+// TODO: move this to domain
 class IOException extends Error {
   constructor(message: string) {
     super(message);
@@ -32,25 +34,33 @@ export class DeviceStorageRepositoryImpl implements DeviceStorageRepository {
 
   async addDevice(device: Device): Promise<Device> {
     const devices = await this.getDevices();
-    if (devices.some(d => d.id === device.id)) {
+    // Check for duplicate by type (not id)
+    if (devices.some(d => d.id === getDeviceId(device))) {
       throw new Error('Device already exists in cache');
     }
-    const newDevices = [...devices, device];
+    // Assign a new UUID
+    const deviceWithId = { ...device, id: getDeviceId(device) };
+    const newDevices = [...devices, deviceWithId];
     try {
       await this.saveDevices(newDevices);
     } catch {
       throw new IOException('Failed to save device to cache');
     }
-    return device;
+    return deviceWithId;
   }
 
-  async removeDevice(device: Device): Promise<void> {
+  async removeDevice(id: string): Promise<boolean> {
+    console.log('removeDevice', id);
     const devices = await this.getDevices();
-    const filtered = devices.filter(d => d.id !== device.id);
+    const filtered = devices.filter(d => d.id !== id);
+    if (filtered.length === devices.length) {
+      return false; // No device removed
+    }
     try {
       await this.saveDevices(filtered);
+      return true;
     } catch {
-      throw new IOException('Failed to remove device from cache');
+      return false;
     }
   }
 

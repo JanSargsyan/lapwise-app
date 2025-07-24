@@ -33,7 +33,7 @@ export class BLERespositoryImpl implements BLERespository {
               device.name.startsWith((DeviceCatalog[deviceType].connectionProps as BLEConnectionProps).advertisedNamePrefix)
             ) {
               devices[device.id] = {
-                id: device.id,
+                id: device.id, // BLE device UUID
                 name: device.name,
                 rssi: device.rssi ?? 0,
                 address: device.id, // BLE device object does not have a separate address property

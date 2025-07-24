@@ -27,6 +27,6 @@ export class AddAndConnectToBleDeviceUseCase {
     if (!connected) {
       throw new Error('Failed to connect to device');
     }
-    return device;
+    return added;
   }
 } 

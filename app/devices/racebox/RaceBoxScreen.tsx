@@ -4,6 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { container } from '@/src/application/di';
 import { Subscription } from 'rxjs';
+import { Device } from '@/src/domain/model/device/Device';
+import { BLEConnectionProps } from '@/src/domain/model/device/ConnectionType';
 
 export default function RaceBoxScreen() {
   const params = useLocalSearchParams();
@@ -18,13 +20,14 @@ export default function RaceBoxScreen() {
   const serialNumber = getParam(params.id, 'RBX123456');
   const model = getParam(params.type, 'Mini S');
   const manufacturer = getParam(params.manufacturer, '');
-  const address = getParam(params.address, '');
+  const device: Device = JSON.parse(getParam(params.device, '{}'));
+  const address: string = (device.connectionProps as BLEConnectionProps)?.address ?? '';
   const [connected, setConnected] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const recording = false;
   const battery = '85%';
   const gps = 'Good';
-
+  console.log('device', device);
   const navigation = useNavigation();
 
   useFocusEffect(
@@ -67,8 +70,19 @@ export default function RaceBoxScreen() {
     Alert.alert('Name updated', `Device name changed to: ${editName}`);
   };
 
-  const handleDelete = () => {
-    Alert.alert('Delete', 'Device deleted');
+  const handleDelete = async () => {
+    try {
+      const removed = await container.ble.disconnectAndRemoveBleDeviceUseCase.execute(device);
+      if (removed) {
+        Alert.alert('Device deleted', 'The device has been removed from your cache.', [
+          { text: 'OK', onPress: () => navigation.goBack() }
+        ]);
+      } else {
+        Alert.alert('Not found', 'Device was not found in your cache.');
+      }
+    } catch {
+      Alert.alert('Error', 'Failed to delete device.');
+    }
   };
 
   useLayoutEffect(() => {
@@ -86,7 +100,7 @@ export default function RaceBoxScreen() {
       <ScrollView contentContainerStyle={[styles.container, { paddingBottom: 48 }]}>
         {/* Device Info */}
         <View style={styles.infoBox}>
-          <Text style={styles.infoLabel}>Name: <Text style={styles.infoValue}>{deviceName}</Text></Text>
+          <Text style={styles.infoLabel}>Name: <Text style={styles.infoValue}>{device.label}</Text></Text>
           <Text style={styles.infoLabel}>S/N: <Text style={styles.infoValue}>{serialNumber}</Text></Text>
           <Text style={styles.infoLabel}>Model: <Text style={styles.infoValue}>{model}</Text></Text>
           {manufacturer ? <Text style={styles.infoLabel}>Manufacturer: <Text style={styles.infoValue}>{manufacturer}</Text></Text> : null}

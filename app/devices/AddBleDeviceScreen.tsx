@@ -92,17 +92,17 @@ export default function AddBleDeviceScreen() {
     if (!deviceType) return;
     setConnectingId(address);
     try {
-      const success = await container.ble.addAndConnectToBleDeviceUseCase.execute(address, deviceType);
-      if (success) {
+      const device = await container.ble.addAndConnectToBleDeviceUseCase.execute(address, deviceType);
+      if (device) {
         Alert.alert('Success', 'Connected to device!');
         if (
           deviceType === 'racebox_mini' ||
           deviceType === 'racebox_micro'
         ) {
           router.replace({
-            pathname: '/RaceBoxScreen',
+            pathname: '/devices/racebox/RaceBoxScreen',
             params: {
-              id: address
+              device: JSON.stringify(device)
             }
           });
         }

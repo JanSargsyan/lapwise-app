@@ -14,6 +14,7 @@ import { RemoveDeviceFromCacheUseCase } from '@/src/usecase/cache/RemoveDeviceFr
 import { IsBLEDeviceConnectedUseCase } from '@/src/usecase/ble/IsBLEDeviceConnectedUseCase';
 import { AddAndConnectToBleDeviceUseCase } from '@/src/usecase/ble/AddAndConnectToBleDeviceUseCase';
 import { DisconnectFromDeviceUseCase } from '@/src/usecase/ble/DisconnectFromDeviceUseCase';
+import { DisconnectAndRemoveBLEDeviceUseCase } from '@/src/usecase/ble/DisconnectAndRemoveBLEDeviceUseCase';
 
 const btManager = new BleManager();
 
@@ -39,6 +40,7 @@ const addDeviceToCacheUseCase = new AddDeviceToCacheUseCase(deviceStorageReposit
 const isBLEDeviceConnectedUseCase = new IsBLEDeviceConnectedUseCase(bleRepository);
 const addAndConnectToBleDeviceUseCase = new AddAndConnectToBleDeviceUseCase(addDeviceToCacheUseCase, connectToBLEDeviceUseCase);
 const disconnectFromDeviceUseCase = new DisconnectFromDeviceUseCase(bleRepository);
+const disconnectAndRemoveBleDeviceUseCase = new DisconnectAndRemoveBLEDeviceUseCase(removeDeviceFromCacheUseCase, disconnectFromDeviceUseCase, isBLEDeviceConnectedUseCase);
 
 export const container = {
     ble: {
@@ -46,12 +48,12 @@ export const container = {
         scanForBLEDevicesUseCase: scanForBLEDevicesUseCase,
         isBLEDeviceConnectedUseCase: isBLEDeviceConnectedUseCase,
         addAndConnectToBleDeviceUseCase: addAndConnectToBleDeviceUseCase,
-        disconnectFromDeviceUseCase: disconnectFromDeviceUseCase
+        disconnectFromDeviceUseCase: disconnectFromDeviceUseCase,
+        disconnectAndRemoveBleDeviceUseCase: disconnectAndRemoveBleDeviceUseCase
     },
     cache: {
         addDeviceToCacheUseCase: addDeviceToCacheUseCase,
-        getCachedDevicesUseCase: getCachedDevicesUseCase,
-        removeDeviceFromCacheUseCase: removeDeviceFromCacheUseCase
+        getCachedDevicesUseCase: getCachedDevicesUseCase
     }
     // getLiveDataUseCase: getLiveDataUseCase,
     // getConnectedDeviceInfoUseCase: getConnectedDeviceInfoUseCase,

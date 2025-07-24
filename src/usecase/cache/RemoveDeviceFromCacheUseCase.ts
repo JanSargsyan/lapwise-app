@@ -3,13 +3,7 @@ import type { DeviceStorageRepository } from '@/src/domain/repository/DeviceStor
 export class RemoveDeviceFromCacheUseCase {
   constructor(private deviceStorageRepository: DeviceStorageRepository) {}
 
-  async execute(address: string): Promise<boolean> {
-    const devices = await this.deviceStorageRepository.getDevices();
-    const filtered = devices.filter(d => d.id !== address);
-    if (filtered.length === devices.length) {
-      return false; // Not found
-    }
-    await this.deviceStorageRepository.saveDevices(filtered);
-    return true;
+  async execute(id: string): Promise<boolean> {
+    return this.deviceStorageRepository.removeDevice(id);
   }
 } 
