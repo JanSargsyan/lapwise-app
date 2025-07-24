@@ -1,8 +1,9 @@
-import React, { useState, useLayoutEffect, useEffect } from 'react';
+import React, { useState, useLayoutEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useLocalSearchParams } from 'expo-router';
+import { useNavigation, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { container } from '@/src/application/di';
+import { Subscription } from 'rxjs';
 
 export default function RaceBoxScreen() {
   const params = useLocalSearchParams();
@@ -15,22 +16,43 @@ export default function RaceBoxScreen() {
   const serialNumber = getParam(params.id, 'RBX123456');
   const model = getParam(params.type, 'Mini S');
   const manufacturer = getParam(params.manufacturer, '');
+  const address = getParam(params.address, '');
   const [connected, setConnected] = useState(false);
+  const [connecting, setConnecting] = useState(false);
   const recording = false;
   const battery = '85%';
   const gps = 'Good';
 
   const navigation = useNavigation();
 
-  useEffect(() => {
-    let isActive = true;
-    if (serialNumber) {
-      container.ble.isBLEDeviceConnectedUseCase.execute(serialNumber).then(isConn => {
-        if (isActive) setConnected(isConn);
-      });
+  useFocusEffect(
+    React.useCallback(() => {
+      let subscription: Subscription | undefined;
+      if (address) {
+        subscription = container.ble.isBLEDeviceConnectedUseCase.execute(address).subscribe(setConnected);
+      }
+      return () => {
+        if (subscription) subscription.unsubscribe();
+      };
+    }, [address])
+  );
+
+  const handleConnectToggle = async () => {
+    setConnecting(true);
+    try {
+      if (connected) {
+        const success = await container.ble.disconnectFromDeviceUseCase.execute(address);
+        setConnected(!success); // confirm it works
+      } else {
+        const success = await container.ble.connectToBLEDeviceUseCase.execute(address);
+        setConnected(success);
+      }
+    } catch {
+      Alert.alert('Error', connected ? 'Failed to disconnect.' : 'Failed to connect.');
+    } finally {
+      setConnecting(false);
     }
-    return () => { isActive = false; };
-  }, [serialNumber]);
+  };
 
   const handleEditName = () => {
     Alert.prompt('Edit Device Name', 'Enter new device name:', [
@@ -70,9 +92,13 @@ export default function RaceBoxScreen() {
 
         {/* Connect/Disconnect button only, full width */}
         <View style={styles.buttonRow}>
-          <TouchableOpacity style={[styles.actionButton, styles.fullWidthButton, connected ? styles.disconnect : styles.connect]}>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.fullWidthButton, connected ? styles.disconnect : styles.connect]}
+            onPress={handleConnectToggle}
+            disabled={connecting}
+          >
             <Ionicons name={connected ? 'close-circle-outline' : 'link-outline'} size={20} color="#fff" />
-            <Text style={styles.actionButtonText}>{connected ? 'Disconnect' : 'Connect'}</Text>
+            <Text style={styles.actionButtonText}>{connecting ? (connected ? 'Disconnecting...' : 'Connecting...') : (connected ? 'Disconnect' : 'Connect')}</Text>
           </TouchableOpacity>
         </View>
 

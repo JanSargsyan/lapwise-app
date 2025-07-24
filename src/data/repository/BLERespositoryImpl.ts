@@ -115,18 +115,45 @@ export class BLERespositoryImpl implements BLERespository {
     }
   }
 
-  async isDeviceConnected(address: string): Promise<boolean> {
-    try {
-      const device = await this.manager.devices([address]);
-      if (device && device.length > 0) {
-        // react-native-ble-plx Device object has isConnected method
-        if (typeof device[0].isConnected === 'function') {
-          return await device[0].isConnected();
+  isDeviceConnected(deviceId: string): Observable<boolean> {
+    return new Observable<boolean>(subscriber => {
+      let disconnectSubscription: { remove: () => void } | null = null;
+      let cancelled = false;
+
+      // Check initial connection state using isDeviceConnected
+      (async () => {
+        try {
+          const connected = await this.manager.isDeviceConnected(deviceId);
+          subscriber.next(connected);
+        } catch {
+          subscriber.next(false);
         }
-      }
-      return false;
-    } catch {
-      return false;
-    }
+      })();
+
+      // Setup disconnection listener
+      disconnectSubscription = this.manager.onDeviceDisconnected(deviceId, async (error, device) => {
+        if (cancelled) return;
+        if (error) {
+          console.error(JSON.stringify(error, null, 4));
+        }
+        if (device) {
+          console.info(JSON.stringify(device, null, 4));
+          subscriber.next(false);
+          // Optionally, try to reconnect automatically:
+          // try {
+          //   await device.connect();
+          //   subscriber.next(true);
+          // } catch (e) {
+          //   // Could not reconnect
+          // }
+        }
+      });
+
+      return () => {
+        cancelled = true;
+        if (disconnectSubscription) disconnectSubscription.remove();
+      };
+    });
   }
+
 } 

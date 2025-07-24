@@ -6,6 +6,7 @@ import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { container } from '@/src/application/di';
 import { Device } from '@/src/domain/model/device/Device';
+import { BLEConnectionProps } from '@/src/domain/model/device/ConnectionType';
 
 const PHONE_DEVICE: Device = {
   id: 'phone',
@@ -63,9 +64,10 @@ export default function DeviceScreen() {
   const handleDevicePress = (device: Device) => {
     switch (device.id) {
       case 'racebox_mini':
-      case 'racebox_micro':
-        router.push({ pathname: '/RaceBoxScreen', params: { id: device.id } });
-        break;
+      case 'racebox_micro': { 
+        const connectionProps = device.connectionProps as BLEConnectionProps;
+        router.push({ pathname: '/RaceBoxScreen', params: { address: connectionProps.address } });
+        break; }
       default:
         alert('This device type is not implemented yet.');
     }
