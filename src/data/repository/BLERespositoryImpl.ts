@@ -139,13 +139,6 @@ export class BLERespositoryImpl implements BLERespository {
         if (device) {
           console.info(JSON.stringify(device, null, 4));
           subscriber.next(false);
-          // Optionally, try to reconnect automatically:
-          // try {
-          //   await device.connect();
-          //   subscriber.next(true);
-          // } catch (e) {
-          //   // Could not reconnect
-          // }
         }
       });
 
