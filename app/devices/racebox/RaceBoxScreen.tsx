@@ -1,7 +1,7 @@
 import React, { useState, useLayoutEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert, Modal, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { useNavigation, useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
 import { container } from '@/src/application/di';
 import { Subscription } from 'rxjs';
 import { Device } from '@/src/domain/model/device/Device';
@@ -29,6 +29,7 @@ export default function RaceBoxScreen() {
   const gps = 'Good';
   console.log('device', device);
   const navigation = useNavigation();
+  const router = useRouter();
 
   useFocusEffect(
     React.useCallback(() => {
@@ -134,7 +135,10 @@ export default function RaceBoxScreen() {
               <Ionicons name={recording ? 'stop-circle-outline' : 'play-circle-outline'} size={20} color="#fff" />
               <Text style={styles.actionButtonText}>{recording ? 'Stop Recording' : 'Start Recording'}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton}>
+            <TouchableOpacity style={styles.actionButton} onPress={() => router.push({
+              pathname: '/devices/racebox/RaceBoxStandaloneRecordingConfigScreen',
+              params: { device: JSON.stringify(device) }
+            })}>
               <Ionicons name="settings-outline" size={20} color="#2196f3" />
               <Text style={[styles.actionButtonText, { color: '#2196f3' }]}>Settings</Text>
             </TouchableOpacity>
