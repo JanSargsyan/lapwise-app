@@ -13,6 +13,8 @@ import { DisconnectAndRemoveBLEDeviceUseCase } from '@/src/usecase/ble/Disconnec
 import { RaceBoxRepositoryImpl } from '@/src/data/repository/RaceBoxRepositoryImpl';
 import { ReadRecordingConfigUseCase } from '@/src/usecase/racebox/ReadRecordingConfigUseCase';
 import { SetRecordingConfigUseCase } from '@/src/usecase/racebox/SetRecordingConfigUseCase';
+import { StartRecordingUseCase } from '@/src/usecase/racebox/StartRecordingUseCase';
+import { StopRecordingUseCase } from '@/src/usecase/racebox/StopRecordingUseCase';
 
 const btManager = new BleManager();
 
@@ -33,6 +35,8 @@ const disconnectAndRemoveBleDeviceUseCase = new DisconnectAndRemoveBLEDeviceUseC
 
 const readRecordingConfigUseCase = new ReadRecordingConfigUseCase(raceBoxRepository);
 const setRecordingConfigUseCase = new SetRecordingConfigUseCase(raceBoxRepository);
+const startRecordingUseCase = new StartRecordingUseCase(raceBoxRepository);
+const stopRecordingUseCase = new StopRecordingUseCase(raceBoxRepository);
 
 export const container = {
     ble: {
@@ -49,6 +53,8 @@ export const container = {
     },
     racebox: {
         readRecordingConfigUseCase: readRecordingConfigUseCase,
-        setRecordingConfigUseCase: setRecordingConfigUseCase
+        setRecordingConfigUseCase: setRecordingConfigUseCase,
+        startRecordingUseCase: startRecordingUseCase,
+        stopRecordingUseCase: stopRecordingUseCase
     }
 }

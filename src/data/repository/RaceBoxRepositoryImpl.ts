@@ -61,14 +61,19 @@ export class RaceBoxRepositoryImpl implements RaceBoxRepository {
     return ackNack?.messageId == 2;
   }
 
-  async startRecording(address: string): Promise<AckNackPayload | null> {
+  async startRecording(address: string): Promise<boolean | null> {
     const api = await this.getApi(address);
-    return api.startRecording();
+    const ackNack = await api.startRecording();
+    console.log("startRecording answer", ackNack);
+    return ackNack?.messageId == 2;
+
   }
 
-  async stopRecording(address: string): Promise<AckNackPayload | null> {
+  async stopRecording(address: string): Promise<boolean | null> {
     const api = await this.getApi(address);
-    return api.stopRecording();
+    const ackNack = await api.stopRecording();
+    console.log("stopRecording answer", ackNack);
+    return ackNack?.messageId == 2;
   }
 
   subscribeLiveData(address: string): Observable<DeviceData> {

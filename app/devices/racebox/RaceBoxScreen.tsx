@@ -24,7 +24,8 @@ export default function RaceBoxScreen() {
   const address: string = (device.connectionProps as BLEConnectionProps)?.address ?? '';
   const [connected, setConnected] = useState(false);
   const [connecting, setConnecting] = useState(false);
-  const recording = false;
+  const [recording, setRecording] = useState(false);
+  const [recordingLoading, setRecordingLoading] = useState(false);
   const battery = '85%';
   const gps = 'Good';
   console.log('device', device);
@@ -86,6 +87,38 @@ export default function RaceBoxScreen() {
     }
   };
 
+  const handleRecordingToggle = async () => {
+    if (!connected) {
+      Alert.alert('Not Connected', 'Please connect to the device first.');
+      return;
+    }
+
+    setRecordingLoading(true);
+    try {
+      if (recording) {
+        const result = await container.racebox.stopRecordingUseCase.execute(address);
+        if (result) {
+          setRecording(false);
+          Alert.alert('Success', 'Recording stopped!');
+        } else {
+          Alert.alert('Error', 'Failed to stop recording.');
+        }
+      } else {
+        const result = await container.racebox.startRecordingUseCase.execute(address);
+        if (result) {
+          setRecording(true);
+          Alert.alert('Success', 'Recording started!');
+        } else {
+          Alert.alert('Error', 'Failed to start recording.');
+        }
+      }
+    } catch (error) {
+      Alert.alert('Error', `Failed to ${recording ? 'stop' : 'start'} recording: ${error}`);
+    } finally {
+      setRecordingLoading(false);
+    }
+  };
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
@@ -131,9 +164,14 @@ export default function RaceBoxScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Standalone Recording</Text>
           <View style={styles.verticalButtonStack}>
-            <TouchableOpacity style={[styles.actionButton, styles.primary]}>
+            <TouchableOpacity style={[styles.actionButton, styles.primary]} onPress={handleRecordingToggle} disabled={recordingLoading}>
               <Ionicons name={recording ? 'stop-circle-outline' : 'play-circle-outline'} size={20} color="#fff" />
-              <Text style={styles.actionButtonText}>{recording ? 'Stop Recording' : 'Start Recording'}</Text>
+              <Text style={styles.actionButtonText}>
+                {recordingLoading 
+                  ? (recording ? 'Stopping...' : 'Starting...') 
+                  : (recording ? 'Stop Recording' : 'Start Recording')
+                }
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionButton} onPress={() => router.push({
               pathname: '/devices/racebox/RaceBoxStandaloneRecordingConfigScreen',

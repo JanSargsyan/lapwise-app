@@ -65,10 +65,6 @@ export default function RaceBoxStandaloneRecordingConfigScreen() {
       <Text style={styles.title}>Standalone Recording Config</Text>
       <Text style={styles.subtitle}>{device.label || 'RaceBox Device'}</Text>
       <View style={styles.row}>
-        <Text style={styles.label}>Enable</Text>
-        <Switch value={config.enable} onValueChange={v => update({ enable: v })} />
-      </View>
-      <View style={styles.row}>
         <Text style={styles.label}>Data Rate</Text>
         <View style={styles.pickerRow}>
           {Object.values(DataRate).filter(v => typeof v === 'number').map((rate) => (
@@ -126,6 +122,7 @@ export default function RaceBoxStandaloneRecordingConfigScreen() {
         />
       </View>
       <Button title={saving ? 'Saving...' : 'Save Config'} onPress={handleSave} disabled={saving} />
+      
     </ScrollView>
   );
 }

@@ -1,5 +1,5 @@
 import type { DeviceData } from '@/src/domain/model/livedata/DeviceData';
-import type { AckNackPayload, RecordingStatusPayload } from 'racebox-api/types';
+import type { RecordingStatusPayload } from 'racebox-api/types';
 import type { Observable } from 'rxjs';
 import { DeviceInfo } from '@/src/domain/model/device/DeviceInfo';
 import { RecordingConfig } from '@/src/domain/model/racebox/RecordingConfig';
@@ -9,8 +9,8 @@ import { RecordingConfig } from '@/src/domain/model/racebox/RecordingConfig';
 export interface RaceBoxRepository {
   readRecordingConfig(address: string): Promise<RecordingConfig | null>;
   setRecordingConfig(address: string, config: RecordingConfig): Promise<boolean | null>;
-  startRecording(address: string): Promise<AckNackPayload | null>;
-  stopRecording(address: string): Promise<AckNackPayload | null>;
+  startRecording(address: string): Promise<boolean | null>;
+  stopRecording(address: string): Promise<boolean | null>;
   subscribeLiveData(address: string): Observable<DeviceData>;
   readDeviceInfo(address: string): Promise<DeviceInfo>;
   getRecordingStatus(address: string): Promise<RecordingStatusPayload | null>;
