@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { View, Text, Switch, TextInput, Button, StyleSheet, Alert, ScrollView } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { DataRate } from '@/src/domain/model/racebox/DataRate';
@@ -18,7 +18,10 @@ const DATA_RATE_LABELS = {
 
 export default function RaceBoxStandaloneRecordingConfigScreen() {
   const params = useLocalSearchParams();
-  const device: Device = JSON.parse(params.device as string || '{}');
+  const device: Device = useMemo(
+    () => JSON.parse(params.device as string || '{}'),
+    [params.device]
+  );
   
   const [config, setConfig] = useState<RecordingConfig | null>(null);
   const [loading, setLoading] = useState(true);

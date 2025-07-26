@@ -10,30 +10,43 @@ import { mapRecordingConfigPayloadToDomain, mapRecordingConfigDomainToPayload } 
 import { BleManager } from 'react-native-ble-plx';
 
 export class RaceBoxRepositoryImpl implements RaceBoxRepository {
+  private apiCache = new Map<string, RaceBoxApi>();
+
   constructor(
     private manager: BleManager,
   ) {}
 
   private async getApi(address: string): Promise<RaceBoxApi> {
-    console.log("getApi", address);
-    const isConnected  = await this.manager.isDeviceConnected(address)
-    console.log("getApi isConnected", isConnected);
+    // Check if we already have a cached API instance
+    if (this.apiCache.has(address)) {
+      const cachedApi = this.apiCache.get(address)!;
+      // Verify the device is still connected
+      const isConnected = await this.manager.isDeviceConnected(address);
+      if (isConnected) {
+        return cachedApi;
+      } else {
+        // Device disconnected, remove from cache
+        this.apiCache.delete(address);
+      }
+    }
+
+    // Create new API instance
+    const isConnected = await this.manager.isDeviceConnected(address);
     if (!isConnected) {
       throw new Error('Device not connected');
     }
 
-    // Connected
-    const devices = await this.manager.devices([address])
-    console.log("getApi devices", devices);
+    const devices = await this.manager.devices([address]);
     const device = devices[0];
-    console.log("getApi device", device);
-    return new RaceBoxApi(device);
+    const api = new RaceBoxApi(device);
+    
+    // Cache the API instance
+    this.apiCache.set(address, api);
+    return api;
   }
 
   async readRecordingConfig(address: string): Promise<RecordingConfig | null> {
-    console.log("readRecordingConfig", address);
     const api = await this.getApi(address);
-    console.log("readRecordingConfig api", api);
     const payload = await api.readRecordingConfig();
     console.log("readRecordingConfig answer", payload);
     if (!payload) return null;

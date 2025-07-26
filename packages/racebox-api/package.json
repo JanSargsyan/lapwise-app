@@ -8,13 +8,15 @@
   "license": "MIT",
   "private": false,
   "scripts": {
-    "build": "tsc && npm run docs",
+    "build": "rimraf dist && tsc && npm run docs",
     "test": "jest",
     "docs": "typedoc --out docs --entryPoints src/index.ts --entryPoints src/protocol/types.ts"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
+    "lunr": "^2.3.9",
     "marker": "^0.1.2",
+    "rimraf": "^5.0.0",
     "shiki": "^0.14.7",
     "ts-jest": "^29.4.0",
     "typedoc": "^0.25.7"

@@ -30,76 +30,258 @@ import type {
   GnssConfigPayload,
 } from './protocol/types';
 
+interface PendingRequest {
+  id: string;
+  resolve: (value: any) => void;
+  reject: (error: Error) => void;
+  matchFn: (pkt: { messageClass: number; messageId: number; payload: Uint8Array }) => any;
+  timeout: NodeJS.Timeout;
+}
+
+interface MessageHandler {
+  messageClass: number;
+  messageId: number;
+  handler: (payload: Uint8Array) => void;
+}
+
 /**
  * API for interacting with a RaceBox BLE device.
  *
- * This class does not handle connection logic. Pass a connected Device instance.
- * All methods are Promise-based and handle encoding/decoding internally.
+ * This class implements a centralized UART message router to handle
+ * concurrent requests properly without interference.
  */
 export class RaceBoxApi {
   private device: Device;
+  private pendingRequests = new Map<string, PendingRequest>();
+  private messageHandlers = new Map<string, MessageHandler[]>();
+  private txSubscription: any = null;
+  private isInitialized = false;
 
   constructor(device: Device) {
     this.device = device;
   }
 
   /**
-   * Internal helper to send a UBX packet and wait for a matching response.
-   * @param packet UBX packet to send
-   * @param matchFn Function to match the response packet
-   * @param timeoutMs Timeout in ms
+   * Initialize the UART message router
+   */
+  private async initialize(): Promise<void> {
+    if (this.isInitialized) {
+      console.log('🔵 initialize: Already initialized');
+      return;
+    }
+
+    // Ensure all services and characteristics are discovered
+    console.log('🔵 initialize: Discovering all services and characteristics');
+    await this.device.discoverAllServicesAndCharacteristics();
+    console.log('✅ initialize: Discovery complete');
+
+    console.log('🔵 initialize: Setting up TX subscription');
+    console.log('🔵 initialize: Service UUID:', RACEBOX_UART_SERVICE_UUID);
+    console.log('🔵 initialize: TX UUID:', RACEBOX_UART_TX_UUID);
+
+    // Set up the single TX subscription
+    this.txSubscription = this.device.monitorCharacteristicForService(
+      RACEBOX_UART_SERVICE_UUID,
+      RACEBOX_UART_TX_UUID,
+      (error, characteristic) => {
+        if (error) {
+          console.log('🔴 initialize: Error in TX subscription:', error);
+          return;
+        }
+        if (!characteristic?.value) {
+          console.log('🔴 initialize: No characteristic value');
+          return;
+        }
+        
+        const data = fromBase64(characteristic.value!);
+        const pkt = decodePacket(data);
+        if (!pkt) {
+          console.log('🔴 initialize: Failed to decode packet');
+          return;
+        }
+
+        // Only log for non-live data packets to reduce spam
+        const key = `${pkt.messageClass.toString(16).padStart(2, '0')}_${pkt.messageId.toString(16).padStart(2, '0')}`;
+        if (key !== 'ff_01') {
+          console.log('🟡 initialize: Received characteristic value, length:', characteristic.value.length);
+          console.log('🟡 initialize: Decoded data length:', data.length);
+          console.log('🟡 initialize: Successfully decoded packet, calling handleIncomingMessage');
+        }
+        
+        this.handleIncomingMessage(pkt);
+      }
+    );
+
+    console.log('✅ initialize: TX subscription set up successfully');
+    this.isInitialized = true;
+  }
+
+  /**
+   * Handle incoming UART messages and route them appropriately
+   */
+  private handleIncomingMessage(pkt: { messageClass: number; messageId: number; payload: Uint8Array }): void {
+    const key = `${pkt.messageClass.toString(16).padStart(2, '0')}_${pkt.messageId.toString(16).padStart(2, '0')}`;
+    
+    // Reduce logging for live data packets to avoid spam
+    if (key !== 'ff_01') {
+      console.log('🟡 handleIncomingMessage: Received packet:', {
+        messageClass: `0x${pkt.messageClass.toString(16).padStart(2, '0')}`,
+        messageId: `0x${pkt.messageId.toString(16).padStart(2, '0')}`,
+        payloadLength: pkt.payload.length,
+        payloadBytes: Array.from(pkt.payload).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '),
+        key: key
+      });
+    }
+    
+    // Check if any pending request matches this message
+    if (key !== 'ff_01') {
+      console.log('🟡 handleIncomingMessage: Checking', this.pendingRequests.size, 'pending requests');
+    }
+    for (const [requestId, request] of this.pendingRequests.entries()) {
+      try {
+        console.log('🟡 handleIncomingMessage: Testing request ID:', requestId);
+        const result = request.matchFn(pkt);
+        if (result !== null && result !== undefined) {
+          console.log('✅ handleIncomingMessage: MATCH FOUND for request ID:', requestId);
+          // Found a matching request, resolve it
+          clearTimeout(request.timeout);
+          this.pendingRequests.delete(requestId);
+          request.resolve(result);
+          return;
+        } else {
+          console.log('🟡 handleIncomingMessage: No match for request ID:', requestId);
+        }
+      } catch (error) {
+        console.log('🔴 handleIncomingMessage: Error in matchFn for request ID:', requestId, error);
+        // Ignore errors in matchFn, continue to next request
+      }
+    }
+
+    // Check if any message handlers match this message
+    const handlers = this.messageHandlers.get(key);
+    if (handlers) {
+      console.log('🟡 handleIncomingMessage: Found', handlers.length, 'message handlers for key:', key);
+      for (const handler of handlers) {
+        try {
+          handler.handler(pkt.payload);
+        } catch (error) {
+          console.error('Error in message handler:', error);
+        }
+      }
+    } else {
+      // Only log for non-live data messages to reduce spam
+      if (key !== 'ff_01') {
+        console.log('🟡 handleIncomingMessage: No message handlers for key:', key);
+      }
+    }
+  }
+
+  /**
+   * Send a UBX packet and wait for a matching response
    */
   private async sendUbxRequest<T>(
     packet: Uint8Array,
-    matchFn: (pkt: {
-      messageClass: number;
-      messageId: number;
-      payload: Uint8Array;
-    }) => T | null,
+    matchFn: (pkt: { messageClass: number; messageId: number; payload: Uint8Array }) => T | null,
     timeoutMs = 2000
   ): Promise<T> {
-    return new Promise<T>(async (resolve, reject) => {
-      let done = false;
-      const base64Packet = toBase64(packet);
-      let timeout: any;
-      const subscription = this.device.monitorCharacteristicForService(
-        RACEBOX_UART_SERVICE_UUID,
-        RACEBOX_UART_TX_UUID,
-        (error, characteristic) => {
-          if (done) return;
-          if (error || !characteristic?.value) return;
-          const data = fromBase64(characteristic.value!);
-          const pkt = decodePacket(data);
-          if (!pkt) return;
-          const result = matchFn(pkt);
-          if (result) {
-            done = true;
-            clearTimeout(timeout);
-            subscription.remove();
-            resolve(result);
-          }
-        }
-      );
-      timeout = setTimeout(() => {
-        if (!done) {
-          done = true;
-          subscription.remove();
-          reject(new Error('Timeout waiting for response'));
-        }
+    console.log('🔵 sendUbxRequest: Starting request');
+    await this.initialize();
+
+    return new Promise<T>((resolve, reject) => {
+      const requestId = Math.random().toString(36).substring(2);
+      console.log('🔵 sendUbxRequest: Created request with ID:', requestId);
+      console.log('🔵 sendUbxRequest: Packet length:', packet.length);
+      console.log('🔵 sendUbxRequest: Packet bytes:', Array.from(packet).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '));
+      
+      const timeout = setTimeout(() => {
+        console.log('🔴 sendUbxRequest: TIMEOUT for request ID:', requestId);
+        this.pendingRequests.delete(requestId);
+        reject(new Error('Timeout waiting for response'));
       }, timeoutMs);
-      try {
-        await this.device.writeCharacteristicWithResponseForService(
-          RACEBOX_UART_SERVICE_UUID,
-          RACEBOX_UART_RX_UUID,
-          base64Packet
-        );
-      } catch (err) {
-        done = true;
+
+      const pendingRequest: PendingRequest = {
+        id: requestId,
+        resolve,
+        reject,
+        matchFn,
+        timeout,
+      };
+
+      this.pendingRequests.set(requestId, pendingRequest);
+      console.log('🔵 sendUbxRequest: Added to pending requests. Total pending:', this.pendingRequests.size);
+
+      // Send the packet
+      const base64Packet = toBase64(packet);
+      console.log('🔵 sendUbxRequest: Sending base64 packet:', base64Packet);
+      console.log('🔵 sendUbxRequest: Service UUID:', RACEBOX_UART_SERVICE_UUID);
+      this.device.characteristicsForService(RACEBOX_UART_SERVICE_UUID).then(chars => {
+        console.log('🔵 sendUbxRequest: device', chars);
+      });
+      this.device.writeCharacteristicWithResponseForService(
+        RACEBOX_UART_SERVICE_UUID,
+        RACEBOX_UART_RX_UUID,
+        base64Packet
+      ).then(() => {
+        console.log('✅ sendUbxRequest: Packet sent successfully');
+      }).catch((err) => {
+        console.log('🔴 sendUbxRequest: Failed to send packet:', err);
+        this.pendingRequests.delete(requestId);
         clearTimeout(timeout);
-        subscription.remove();
         reject(err);
-      }
+      });
     });
+  }
+
+  /**
+   * Register a message handler for specific message types
+   */
+  private registerMessageHandler(
+    messageClass: number,
+    messageId: number,
+    handler: (payload: Uint8Array) => void
+  ): () => void {
+    const key = `${messageClass.toString(16).padStart(2, '0')}_${messageId.toString(16).padStart(2, '0')}`;
+    
+    if (!this.messageHandlers.has(key)) {
+      this.messageHandlers.set(key, []);
+    }
+    
+    const handlers = this.messageHandlers.get(key)!;
+    handlers.push({ messageClass, messageId, handler });
+
+    // Return unsubscribe function
+    return () => {
+      const handlers = this.messageHandlers.get(key);
+      if (handlers) {
+        const index = handlers.findIndex(h => h.handler === handler);
+        if (index !== -1) {
+          handlers.splice(index, 1);
+        }
+        if (handlers.length === 0) {
+          this.messageHandlers.delete(key);
+        }
+      }
+    };
+  }
+
+  /**
+   * Clean up resources
+   */
+  public dispose(): void {
+    // Clear all pending requests
+    for (const request of this.pendingRequests.values()) {
+      clearTimeout(request.timeout);
+      request.reject(new Error('API disposed'));
+    }
+    this.pendingRequests.clear();
+
+    // Remove TX subscription
+    if (this.txSubscription) {
+      this.txSubscription.remove();
+      this.txSubscription = null;
+    }
+
+    this.isInitialized = false;
   }
 
   /**
@@ -107,13 +289,34 @@ export class RaceBoxApi {
    * Sends UBX packet (0xFF 0x25, payload 0) and waits for response.
    */
   async readRecordingConfig(): Promise<RecordingConfigPayload | null> {
+    console.log('🔵 readRecordingConfig: Starting');
     const packet = encodePacket(0xff, 0x25, new Uint8Array([]));
-    return this.sendUbxRequest(packet, (pkt) => {
-      if (pkt.messageClass === 0xff && pkt.messageId === 0x25) {
-        return decodeRecordingConfig(pkt.payload);
-      }
-      return null;
-    });
+    console.log('🔵 readRecordingConfig: Created packet for 0xFF 0x25');
+    
+    try {
+      const result = await this.sendUbxRequest(packet, (pkt) => {
+        console.log('🟡 readRecordingConfig: Testing packet:', {
+          messageClass: `0x${pkt.messageClass.toString(16).padStart(2, '0')}`,
+          messageId: `0x${pkt.messageId.toString(16).padStart(2, '0')}`,
+          payloadLength: pkt.payload.length
+        });
+        
+        if (pkt.messageClass === 0xff && pkt.messageId === 0x25) {
+          console.log('✅ readRecordingConfig: Found matching response');
+          const decoded = decodeRecordingConfig(pkt.payload);
+          console.log('✅ readRecordingConfig: Decoded config:', decoded);
+          return decoded;
+        }
+        console.log('🟡 readRecordingConfig: No match for this packet');
+        return null;
+      });
+      
+      console.log('✅ readRecordingConfig: Successfully got result:', result);
+      return result;
+    } catch (error) {
+      console.log('🔴 readRecordingConfig: Error:', error);
+      throw error;
+    }
   }
 
   /**
@@ -138,40 +341,28 @@ export class RaceBoxApi {
     });
   }
 
-  // --- Live Data ---
   /**
-   * Subscribe to live data messages (GNSS, IMU, system data).
-   * Calls onData for each valid RaceBoxLiveData message.
-   * @param onData Callback for each decoded live data message
+   * Subscribe to live data updates.
+   * @param onData Callback for live data
    * @returns Unsubscribe function
    */
   subscribeLiveData(onData: (data: RaceBoxLiveData) => void): () => void {
-    const subscription = this.device.monitorCharacteristicForService(
-      RACEBOX_UART_SERVICE_UUID,
-      RACEBOX_UART_TX_UUID,
-      (error, characteristic) => {
-        if (error || !characteristic?.value) return;
-        const data = fromBase64(characteristic.value!);
-        const pkt = decodePacket(data);
-        if (!pkt) return;
-        if (pkt.messageClass === 0xff && pkt.messageId === 0x01) {
-          const live = decodeLiveData(pkt.payload);
-          if (live) onData(live);
-        }
+    return this.registerMessageHandler(0xff, 0x01, (payload) => {
+      const data = decodeLiveData(payload);
+      if (data) {
+        onData(data);
       }
-    );
-    return () => subscription.remove();
+    });
   }
 
-  // --- GNSS Receiver Configuration ---
   /**
-   * Read GNSS receiver configuration.
-   * Sends UBX packet (0xFF 0x27, payload 0) and waits for response.
+   * Read GNSS configuration.
+   * Sends UBX packet (0xFF 0x26, payload 0) and waits for response.
    */
   async readGnssConfig(): Promise<GnssConfigPayload | null> {
-    const packet = encodePacket(0xff, 0x27, new Uint8Array([]));
+    const packet = encodePacket(0xff, 0x26, new Uint8Array([]));
     return this.sendUbxRequest(packet, (pkt) => {
-      if (pkt.messageClass === 0xff && pkt.messageId === 0x27) {
+      if (pkt.messageClass === 0xff && pkt.messageId === 0x26) {
         return decodeGnssConfig(pkt.payload);
       }
       return null;
@@ -179,13 +370,14 @@ export class RaceBoxApi {
   }
 
   /**
-   * Set GNSS receiver configuration.
-   * Sends UBX packet (0xFF 0x27, 3-byte payload) and waits for ACK/NACK.
-   * @param config GNSS config payload (Uint8Array or typed)
+   * Set GNSS configuration.
+   * Sends UBX packet (0xFF 0x26, config payload) and waits for ACK/NACK.
+   * @param config GNSS configuration as Uint8Array
    */
   async setGnssConfig(config: Uint8Array): Promise<AckNackPayload | null> {
-    const packet = encodePacket(0xff, 0x27, config);
+    const packet = encodePacket(0xff, 0x26, config);
     return this.sendUbxRequest(packet, (pkt) => {
+      // ACK = 0xFF 0x02, NACK = 0xFF 0x03
       if (
         pkt.messageClass === 0xff &&
         (pkt.messageId === 0x02 || pkt.messageId === 0x03)
@@ -196,67 +388,28 @@ export class RaceBoxApi {
     });
   }
 
-  // --- Standalone Recording Status ---
   /**
-   * Request standalone recording status.
-   * Sends UBX packet (0xFF 0x22, payload 0) and waits for RecordingStatusPayload.
+   * Get recording status.
+   * Sends UBX packet (0xFF 0x27, payload 0) and waits for response.
    */
   async getRecordingStatus(): Promise<RecordingStatusPayload | null> {
-    const packet = encodePacket(0xff, 0x22, new Uint8Array([]));
+    const packet = encodePacket(0xff, 0x27, new Uint8Array([]));
     return this.sendUbxRequest(packet, (pkt) => {
-      if (pkt.messageClass === 0xff && pkt.messageId === 0x22) {
+      if (pkt.messageClass === 0xff && pkt.messageId === 0x27) {
         return decodeRecordingStatus(pkt.payload);
       }
       return null;
     });
   }
 
-  // --- Start/Stop/Pause Recording ---
   /**
-   * Start standalone recording.
+   * Start recording.
+   * Sends UBX packet (0xFF 0x28, payload 0) and waits for ACK/NACK.
    */
   async startRecording(): Promise<AckNackPayload | null> {
-    const config = await this.readRecordingConfig();
-    if (!config) throw new Error('Failed to read current recording config');
-    const newConfig = { ...config, enable: true };
-    return this.setRecordingConfig(newConfig);
-  }
-
-  /**
-   * Stop standalone recording.
-   */
-  async stopRecording(): Promise<AckNackPayload | null> {
-    const config = await this.readRecordingConfig();
-    if (!config) throw new Error('Failed to read current recording config');
-    const newConfig = { ...config, enable: false };
-    return this.setRecordingConfig(newConfig);
-  }
-
-  /**
-   * Pause standalone recording.
-   * Note: Protocol does not define a distinct 'pause' value for 'enable'.
-   * This implementation sets 'enable' to false, which matches 'stop'.
-   * If the device supports a different pause mechanism, update here.
-   */
-  async pauseRecording(): Promise<AckNackPayload | null> {
-    const config = await this.readRecordingConfig();
-    if (!config) throw new Error('Failed to read current recording config');
-    const newConfig = { ...config, enable: false };
-    return this.setRecordingConfig(newConfig);
-  }
-
-  // --- Unlock Memory ---
-  /**
-   * Unlock device memory with security code.
-   * Sends UBX packet (0xFF 0x30, 4-byte payload) and waits for ACK/NACK.
-   * @param payload UnlockMemoryPayload
-   */
-  async unlockMemory(
-    payload: UnlockMemoryPayload
-  ): Promise<AckNackPayload | null> {
-    const encoded = encodeUnlockMemory(payload);
-    const packet = encodePacket(0xff, 0x30, encoded);
+    const packet = encodePacket(0xff, 0x28, new Uint8Array([]));
     return this.sendUbxRequest(packet, (pkt) => {
+      // ACK = 0xFF 0x02, NACK = 0xFF 0x03
       if (
         pkt.messageClass === 0xff &&
         (pkt.messageId === 0x02 || pkt.messageId === 0x03)
@@ -267,14 +420,72 @@ export class RaceBoxApi {
     });
   }
 
-  // --- Erase Memory ---
   /**
-   * Erase device memory.
-   * Sends UBX packet (0xFF 0x24, payload 0) and waits for ACK/NACK.
+   * Stop recording.
+   * Sends UBX packet (0xFF 0x29, payload 0) and waits for ACK/NACK.
+   */
+  async stopRecording(): Promise<AckNackPayload | null> {
+    const packet = encodePacket(0xff, 0x29, new Uint8Array([]));
+    return this.sendUbxRequest(packet, (pkt) => {
+      // ACK = 0xFF 0x02, NACK = 0xFF 0x03
+      if (
+        pkt.messageClass === 0xff &&
+        (pkt.messageId === 0x02 || pkt.messageId === 0x03)
+      ) {
+        return decodeAckNack(pkt.payload);
+      }
+      return null;
+    });
+  }
+
+  /**
+   * Pause recording.
+   * Sends UBX packet (0xFF 0x2A, payload 0) and waits for ACK/NACK.
+   */
+  async pauseRecording(): Promise<AckNackPayload | null> {
+    const packet = encodePacket(0xff, 0x2a, new Uint8Array([]));
+    return this.sendUbxRequest(packet, (pkt) => {
+      // ACK = 0xFF 0x02, NACK = 0xFF 0x03
+      if (
+        pkt.messageClass === 0xff &&
+        (pkt.messageId === 0x02 || pkt.messageId === 0x03)
+      ) {
+        return decodeAckNack(pkt.payload);
+      }
+      return null;
+    });
+  }
+
+  /**
+   * Unlock memory with security code.
+   * Sends UBX packet (0xFF 0x2B, security code payload) and waits for ACK/NACK.
+   * @param payload Unlock memory payload
+   */
+  async unlockMemory(
+    payload: UnlockMemoryPayload
+  ): Promise<AckNackPayload | null> {
+    const encodedPayload = encodeUnlockMemory(payload);
+    const packet = encodePacket(0xff, 0x2b, encodedPayload);
+    return this.sendUbxRequest(packet, (pkt) => {
+      // ACK = 0xFF 0x02, NACK = 0xFF 0x03
+      if (
+        pkt.messageClass === 0xff &&
+        (pkt.messageId === 0x02 || pkt.messageId === 0x03)
+      ) {
+        return decodeAckNack(pkt.payload);
+      }
+      return null;
+    });
+  }
+
+  /**
+   * Erase memory.
+   * Sends UBX packet (0xFF 0x2C, payload 0) and waits for ACK/NACK.
    */
   async eraseMemory(): Promise<AckNackPayload | null> {
-    const packet = encodePacket(0xff, 0x24, new Uint8Array([]));
+    const packet = encodePacket(0xff, 0x2c, new Uint8Array([]));
     return this.sendUbxRequest(packet, (pkt) => {
+      // ACK = 0xFF 0x02, NACK = 0xFF 0x03
       if (
         pkt.messageClass === 0xff &&
         (pkt.messageId === 0x02 || pkt.messageId === 0x03)
@@ -287,12 +498,12 @@ export class RaceBoxApi {
 
   /**
    * Cancel memory erase.
-   * Sends UBX packet (0xFF 0x24, payload 1 byte = cancel) and waits for ACK/NACK.
+   * Sends UBX packet (0xFF 0x2D, payload 0) and waits for ACK/NACK.
    */
   async cancelEraseMemory(): Promise<AckNackPayload | null> {
-    const payload = new Uint8Array([1]);
-    const packet = encodePacket(0xff, 0x24, payload);
+    const packet = encodePacket(0xff, 0x2d, new Uint8Array([]));
     return this.sendUbxRequest(packet, (pkt) => {
+      // ACK = 0xFF 0x02, NACK = 0xFF 0x03
       if (
         pkt.messageClass === 0xff &&
         (pkt.messageId === 0x02 || pkt.messageId === 0x03)
@@ -303,15 +514,14 @@ export class RaceBoxApi {
     });
   }
 
-  // --- Data Download ---
   /**
-   * Start download of recorded data.
-   * Sends UBX packet (0xFF 0x23, payload 0) and waits for DataDownloadReplyPayload.
+   * Start data download.
+   * Sends UBX packet (0xFF 0x2E, payload 0) and waits for response.
    */
   async startDataDownload(): Promise<DataDownloadReplyPayload | null> {
-    const packet = encodePacket(0xff, 0x23, new Uint8Array([]));
+    const packet = encodePacket(0xff, 0x2e, new Uint8Array([]));
     return this.sendUbxRequest(packet, (pkt) => {
-      if (pkt.messageClass === 0xff && pkt.messageId === 0x23) {
+      if (pkt.messageClass === 0xff && pkt.messageId === 0x2e) {
         return decodeDataDownloadReply(pkt.payload);
       }
       return null;
@@ -320,12 +530,12 @@ export class RaceBoxApi {
 
   /**
    * Cancel data download.
-   * Sends UBX packet (0xFF 0x23, payload 1 byte = cancel) and waits for ACK/NACK.
+   * Sends UBX packet (0xFF 0x2F, payload 0) and waits for ACK/NACK.
    */
   async cancelDataDownload(): Promise<AckNackPayload | null> {
-    const payload = new Uint8Array([1]);
-    const packet = encodePacket(0xff, 0x23, payload);
+    const packet = encodePacket(0xff, 0x2f, new Uint8Array([]));
     return this.sendUbxRequest(packet, (pkt) => {
+      // ACK = 0xFF 0x02, NACK = 0xFF 0x03
       if (
         pkt.messageClass === 0xff &&
         (pkt.messageId === 0x02 || pkt.messageId === 0x03)
@@ -336,115 +546,82 @@ export class RaceBoxApi {
     });
   }
 
-  // --- Notification Subscriptions ---
   /**
-   * Subscribe to history data messages (downloaded data, 0xFF 0x21).
-   * Calls onData for each valid RaceBoxLiveData message.
-   * @param onData Callback for each decoded history data message
+   * Subscribe to history data updates.
+   * @param onData Callback for history data
    * @returns Unsubscribe function
    */
   subscribeHistoryData(onData: (data: RaceBoxLiveData) => void): () => void {
-    const subscription = this.device.monitorCharacteristicForService(
-      RACEBOX_UART_SERVICE_UUID,
-      RACEBOX_UART_TX_UUID,
-      (error, characteristic) => {
-        if (error || !characteristic?.value) return;
-        const data = fromBase64(characteristic.value!);
-        const pkt = decodePacket(data);
-        if (!pkt) return;
-        if (pkt.messageClass === 0xff && pkt.messageId === 0x21) {
-          const history = decodeLiveData(pkt.payload);
-          if (history) onData(history);
-        }
+    return this.registerMessageHandler(0xff, 0x21, (payload) => {
+      const data = decodeLiveData(payload);
+      if (data) {
+        onData(data);
       }
-    );
-    return () => subscription.remove();
+    });
   }
 
   /**
-   * Subscribe to state change messages (pause/start/stop events, 0xFF 0x26).
-   * Calls onChange for each valid StateChangePayload message.
-   * @param onChange Callback for each state change
+   * Subscribe to state changes.
+   * @param onChange Callback for state changes
    * @returns Unsubscribe function
    */
   subscribeStateChanges(
     onChange: (data: StateChangePayload) => void
   ): () => void {
-    const subscription = this.device.monitorCharacteristicForService(
-      RACEBOX_UART_SERVICE_UUID,
-      RACEBOX_UART_TX_UUID,
-      (error, characteristic) => {
-        if (error || !characteristic?.value) return;
-        const data = fromBase64(characteristic.value!);
-        const pkt = decodePacket(data);
-        if (!pkt) return;
-        if (pkt.messageClass === 0xff && pkt.messageId === 0x26) {
-          const state = decodeStateChange(pkt.payload);
-          if (state) onChange(state);
-        }
+    return this.registerMessageHandler(0xff, 0x30, (payload) => {
+      const data = decodeStateChange(payload);
+      if (data) {
+        onChange(data);
       }
-    );
-    return () => subscription.remove();
+    });
   }
 
   /**
-   * Subscribe to erase progress notifications (0xFF 0x24).
-   * Calls onProgress for each valid EraseProgressPayload message.
-   * @param onProgress Callback for each erase progress update
+   * Subscribe to erase progress updates.
+   * @param onProgress Callback for erase progress
    * @returns Unsubscribe function
    */
   subscribeEraseProgress(
     onProgress: (progress: EraseProgressPayload) => void
   ): () => void {
-    const subscription = this.device.monitorCharacteristicForService(
-      RACEBOX_UART_SERVICE_UUID,
-      RACEBOX_UART_TX_UUID,
-      (error, characteristic) => {
-        if (error || !characteristic?.value) return;
-        const data = fromBase64(characteristic.value!);
-        const pkt = decodePacket(data);
-        if (!pkt) return;
-        if (pkt.messageClass === 0xff && pkt.messageId === 0x24) {
-          const progress = decodeEraseProgress(pkt.payload);
-          if (progress) onProgress(progress);
-        }
+    return this.registerMessageHandler(0xff, 0x31, (payload) => {
+      const data = decodeEraseProgress(payload);
+      if (data) {
+        onProgress(data);
       }
-    );
-    return () => subscription.remove();
+    });
   }
 
   /**
-   * Subscribe to ACK/NACK responses (0xFF 0x02/0x03).
-   * Calls onAck for each valid AckNackPayload message.
-   * @param onAck Callback for each ACK/NACK
+   * Subscribe to ACK/NACK messages.
+   * @param onAck Callback for ACK/NACK messages
    * @returns Unsubscribe function
    */
   subscribeAckNack(onAck: (ack: AckNackPayload) => void): () => void {
-    const subscription = this.device.monitorCharacteristicForService(
-      RACEBOX_UART_SERVICE_UUID,
-      RACEBOX_UART_TX_UUID,
-      (error, characteristic) => {
-        if (error || !characteristic?.value) return;
-        const data = fromBase64(characteristic.value!);
-        const pkt = decodePacket(data);
-        if (!pkt) return;
-        if (
-          pkt.messageClass === 0xff &&
-          (pkt.messageId === 0x02 || pkt.messageId === 0x03)
-        ) {
-          const ack = decodeAckNack(pkt.payload);
-          if (ack) onAck(ack);
-        }
+    const unsubscribeAck = this.registerMessageHandler(0xff, 0x02, (payload) => {
+      const data = decodeAckNack(payload);
+      if (data) {
+        onAck(data);
       }
-    );
-    return () => subscription.remove();
+    });
+
+    const unsubscribeNack = this.registerMessageHandler(0xff, 0x03, (payload) => {
+      const data = decodeAckNack(payload);
+      if (data) {
+        onAck(data);
+      }
+    });
+
+    // Return combined unsubscribe function
+    return () => {
+      unsubscribeAck();
+      unsubscribeNack();
+    };
   }
 
-  // --- NMEA Output ---
   /**
-   * Subscribe to NMEA output (firmware 3.3+).
-   * Calls onNmea for each NMEA sentence (string).
-   * @param onNmea Callback for each NMEA sentence
+   * Subscribe to NMEA output.
+   * @param onNmea Callback for NMEA messages
    * @returns Unsubscribe function
    */
   subscribeNmeaOutput(onNmea: (nmea: string) => void): () => void {
@@ -453,22 +630,17 @@ export class RaceBoxApi {
       RACEBOX_NMEA_TX_UUID,
       (error, characteristic) => {
         if (error || !characteristic?.value) return;
-        // NMEA is sent as a single notification, base64 encoded
-        const nmea =
-          typeof Buffer !== 'undefined'
-            ? Buffer.from(characteristic.value, 'base64').toString('utf-8')
-            : atob(characteristic.value);
+        const nmeaBytes = fromBase64(characteristic.value!);
+        const nmea = new TextDecoder().decode(nmeaBytes);
         onNmea(nmea);
       }
     );
     return () => subscription.remove();
   }
 
-  // --- Device Info ---
   /**
-   * Read device information (model, serial, firmware, hardware, manufacturer).
-   * Reads Device Information Service characteristics by UUID.
-   * @returns Object with model, serial, firmware, hardware, manufacturer or null on error
+   * Read device information.
+   * Returns basic device info from BLE characteristics.
    */
   async readDeviceInfo(): Promise<{
     model?: string;
@@ -477,36 +649,43 @@ export class RaceBoxApi {
     hardware?: string;
     manufacturer?: string;
   } | null> {
-    const SERVICE = '0000180a-0000-1000-8000-00805f9b34fb';
-    const UUIDS = {
-      model: '00002a24-0000-1000-8000-00805f9b34fb',
-      serial: '00002a25-0000-1000-8000-00805f9b34fb',
-      firmware: '00002a26-0000-1000-8000-00805f9b34fb',
-      hardware: '00002a27-0000-1000-8000-00805f9b34fb',
-      manufacturer: '00002a29-0000-1000-8000-00805f9b34fb',
-    };
     try {
-      const [model, serial, firmware, hardware, manufacturer] =
-        await Promise.all([
-          this.device.readCharacteristicForService(SERVICE, UUIDS.model),
-          this.device.readCharacteristicForService(SERVICE, UUIDS.serial),
-          this.device.readCharacteristicForService(SERVICE, UUIDS.firmware),
-          this.device.readCharacteristicForService(SERVICE, UUIDS.hardware),
-          this.device.readCharacteristicForService(SERVICE, UUIDS.manufacturer),
-        ]);
-      const decode = (c: any) =>
-        c?.value
-          ? typeof Buffer !== 'undefined'
-            ? Buffer.from(c.value, 'base64').toString('utf-8')
-            : atob(c.value)
-          : undefined;
-      return {
-        model: decode(model),
-        serial: decode(serial),
-        firmware: decode(firmware),
-        hardware: decode(hardware),
-        manufacturer: decode(manufacturer),
-      };
+      const services = await this.device.services();
+      const deviceInfoService = services.find(
+        (s) => s.uuid.toLowerCase() === '180a'
+      );
+      if (!deviceInfoService) return null;
+
+      const characteristics = await deviceInfoService.characteristics();
+             const decode = (c: any) => {
+         if (!c?.value) return undefined;
+         const bytes = fromBase64(c.value);
+         return new TextDecoder().decode(bytes);
+       };
+
+       const modelChar = characteristics.find(
+         (c) => c.uuid.toLowerCase() === '2a24'
+       );
+       const serialChar = characteristics.find(
+         (c) => c.uuid.toLowerCase() === '2a25'
+       );
+       const firmwareChar = characteristics.find(
+         (c) => c.uuid.toLowerCase() === '2a26'
+       );
+       const hardwareChar = characteristics.find(
+         (c) => c.uuid.toLowerCase() === '2a27'
+       );
+       const manufacturerChar = characteristics.find(
+         (c) => c.uuid.toLowerCase() === '2a29'
+       );
+
+       return {
+         model: decode(modelChar),
+         serial: decode(serialChar),
+         firmware: decode(firmwareChar),
+         hardware: decode(hardwareChar),
+         manufacturer: decode(manufacturerChar),
+       };
     } catch {
       return null;
     }
