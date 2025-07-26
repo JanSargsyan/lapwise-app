@@ -403,42 +403,6 @@ export class RaceBoxApi {
   }
 
   /**
-   * Start recording.
-   * Sends UBX packet (0xFF 0x28, payload 0) and waits for ACK/NACK.
-   */
-  async startRecording(): Promise<AckNackPayload | null> {
-    const packet = encodePacket(0xff, 0x28, new Uint8Array([]));
-    return this.sendUbxRequest(packet, (pkt) => {
-      // ACK = 0xFF 0x02, NACK = 0xFF 0x03
-      if (
-        pkt.messageClass === 0xff &&
-        (pkt.messageId === 0x02 || pkt.messageId === 0x03)
-      ) {
-        return decodeAckNack(pkt.payload);
-      }
-      return null;
-    });
-  }
-
-  /**
-   * Stop recording.
-   * Sends UBX packet (0xFF 0x29, payload 0) and waits for ACK/NACK.
-   */
-  async stopRecording(): Promise<AckNackPayload | null> {
-    const packet = encodePacket(0xff, 0x29, new Uint8Array([]));
-    return this.sendUbxRequest(packet, (pkt) => {
-      // ACK = 0xFF 0x02, NACK = 0xFF 0x03
-      if (
-        pkt.messageClass === 0xff &&
-        (pkt.messageId === 0x02 || pkt.messageId === 0x03)
-      ) {
-        return decodeAckNack(pkt.payload);
-      }
-      return null;
-    });
-  }
-
-  /**
    * Pause recording.
    * Sends UBX packet (0xFF 0x2A, payload 0) and waits for ACK/NACK.
    */

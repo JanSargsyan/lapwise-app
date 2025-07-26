@@ -1,5 +1,5 @@
 import { RaceBoxApi } from 'racebox-api';
-import type { AckNackPayload, RecordingStatusPayload, RaceBoxLiveData } from 'racebox-api/types';
+import type { RecordingStatusPayload, RaceBoxLiveData } from 'racebox-api/types';
 import { mapRaceBoxLiveDataToDeviceData } from '@/src/data/mapper/LiveDataMapper';
 import type { DeviceData } from '@/src/domain/model/livedata/DeviceData';
 import { Observable } from 'rxjs';
@@ -58,21 +58,6 @@ export class RaceBoxRepositoryImpl implements RaceBoxRepository {
     const payload = mapRecordingConfigDomainToPayload(config);
     const ackNack = await api.setRecordingConfig(payload);
     console.log("setRecordingConfig answer", ackNack);
-    return ackNack?.messageId == 2;
-  }
-
-  async startRecording(address: string): Promise<boolean | null> {
-    const api = await this.getApi(address);
-    const ackNack = await api.startRecording();
-    console.log("startRecording answer", ackNack);
-    return ackNack?.messageId == 2;
-
-  }
-
-  async stopRecording(address: string): Promise<boolean | null> {
-    const api = await this.getApi(address);
-    const ackNack = await api.stopRecording();
-    console.log("stopRecording answer", ackNack);
     return ackNack?.messageId == 2;
   }
 

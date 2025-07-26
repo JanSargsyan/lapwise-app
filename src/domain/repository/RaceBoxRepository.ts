@@ -9,8 +9,6 @@ import { RecordingConfig } from '@/src/domain/model/racebox/RecordingConfig';
 export interface RaceBoxRepository {
   readRecordingConfig(address: string): Promise<RecordingConfig | null>;
   setRecordingConfig(address: string, config: RecordingConfig): Promise<boolean | null>;
-  startRecording(address: string): Promise<boolean | null>;
-  stopRecording(address: string): Promise<boolean | null>;
   subscribeLiveData(address: string): Observable<DeviceData>;
   readDeviceInfo(address: string): Promise<DeviceInfo>;
   getRecordingStatus(address: string): Promise<RecordingStatusPayload | null>;
