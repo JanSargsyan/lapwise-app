@@ -1,41 +1,62 @@
 {
-  "name": "racebox-api",
+  "name": "racebox-ble-client",
   "version": "1.0.0",
+  "description": "RaceBox BLE Client using Hexagonal Architecture",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "description": "API and types for RaceBox device integration.",
-  "author": "",
-  "license": "MIT",
-  "private": false,
   "scripts": {
-    "build": "rimraf dist && tsc && npm run docs",
+    "build": "tsc",
     "test": "jest",
-    "docs": "typedoc --out docs --entryPoints src/index.ts --entryPoints src/protocol/types.ts"
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:e2e": "jest --config jest.e2e.config.js",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "format": "prettier --write src/**/*.ts",
+    "dev": "ts-node scripts/dev/dev-server.ts",
+    "clean": "rm -rf dist",
+    "prebuild": "npm run clean",
+    "prepublishOnly": "npm run build && npm run test"
+  },
+  "keywords": [
+    "racebox",
+    "ble",
+    "bluetooth",
+    "gps",
+    "tracking",
+    "racing",
+    "hexagonal-architecture",
+    "typescript",
+    "rxjs"
+  ],
+  "author": "RaceBox BLE Client Team",
+  "license": "MIT",
+  "dependencies": {
+    "rxjs": "^7.8.0",
+    "react-native-ble-plx": "^2.0.0"
   },
   "devDependencies": {
-    "@types/jest": "^30.0.0",
-    "lunr": "^2.3.9",
-    "marker": "^0.1.2",
-    "rimraf": "^5.0.0",
-    "shiki": "^0.14.7",
-    "ts-jest": "^29.4.0",
-    "typedoc": "^0.25.7"
+    "typescript": "^5.0.0",
+    "jest": "^29.0.0",
+    "@types/jest": "^29.0.0",
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0",
+    "ts-node": "^10.9.0",
+    "@types/node": "^20.0.0"
   },
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    },
-    "./types": {
-      "import": "./dist/types.js",
-      "require": "./dist/types.js",
-      "types": "./dist/types.d.ts"
-    },
-    "./utils": {
-      "import": "./dist/utils-barrel.js",
-      "require": "./dist/utils-barrel.js",
-      "types": "./dist/utils-barrel.d.ts"
-    }
-  }
+  "peerDependencies": {
+    "react-native": ">=0.60.0"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/racebox/racebox-ble-client.git"
+  },
+  "bugs": {
+    "url": "https://github.com/racebox/racebox-ble-client/issues"
+  },
+  "homepage": "https://github.com/racebox/racebox-ble-client#readme"
 }
