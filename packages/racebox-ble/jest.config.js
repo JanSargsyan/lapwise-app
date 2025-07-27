@@ -27,10 +27,6 @@ module.exports = {
       statements: 80
     }
   },
-  setupFilesAfterEnv: ['<rootDir>/tests/setup/jest.setup.ts'],
-  moduleNameMapping: {
-    '^@/(.*)$': '<rootDir>/src/$1'
-  },
   testTimeout: 10000,
   verbose: true,
   clearMocks: true,
