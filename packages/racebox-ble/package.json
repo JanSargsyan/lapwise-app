@@ -1,0 +1,41 @@
+{
+  "name": "racebox-api",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "description": "API and types for RaceBox device integration.",
+  "author": "",
+  "license": "MIT",
+  "private": false,
+  "scripts": {
+    "build": "rimraf dist && tsc && npm run docs",
+    "test": "jest",
+    "docs": "typedoc --out docs --entryPoints src/index.ts --entryPoints src/protocol/types.ts"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "lunr": "^2.3.9",
+    "marker": "^0.1.2",
+    "rimraf": "^5.0.0",
+    "shiki": "^0.14.7",
+    "ts-jest": "^29.4.0",
+    "typedoc": "^0.25.7"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./types": {
+      "import": "./dist/types.js",
+      "require": "./dist/types.js",
+      "types": "./dist/types.d.ts"
+    },
+    "./utils": {
+      "import": "./dist/utils-barrel.js",
+      "require": "./dist/utils-barrel.js",
+      "types": "./dist/utils-barrel.d.ts"
+    }
+  }
+}

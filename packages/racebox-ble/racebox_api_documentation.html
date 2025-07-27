@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RaceBox BLE Client API Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #007bff;
+        }
+
+        .header h1 {
+            color: #007bff;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.2em;
+        }
+
+        .toc {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #007bff;
+        }
+
+        .toc h2 {
+            color: #007bff;
+            margin-bottom: 15px;
+        }
+
+        .toc ul {
+            list-style: none;
+        }
+
+        .toc li {
+            margin: 8px 0;
+        }
+
+        .toc a {
+            color: #333;
+            text-decoration: none;
+            padding: 5px 0;
+            display: block;
+            transition: color 0.3s;
+        }
+
+        .toc a:hover {
+            color: #007bff;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section h2 {
+            color: #007bff;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .section h3 {
+            color: #495057;
+            font-size: 1.4em;
+            margin: 25px 0 15px 0;
+        }
+
+        .section h4 {
+            color: #6c757d;
+            font-size: 1.2em;
+            margin: 20px 0 10px 0;
+        }
+
+        .method {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .method h4 {
+            color: #007bff;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 10px;
+        }
+
+        .method .description {
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+
+        .method .parameters {
+            margin: 15px 0;
+        }
+
+        .method .parameters h5 {
+            color: #495057;
+            margin-bottom: 8px;
+        }
+
+        .method .parameters ul {
+            list-style: none;
+            padding-left: 20px;
+        }
+
+        .method .parameters li {
+            margin: 5px 0;
+            font-family: 'Courier New', monospace;
+            background-color: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        .method .use-cases {
+            margin: 15px 0;
+        }
+
+        .method .use-cases h5 {
+            color: #495057;
+            margin-bottom: 8px;
+        }
+
+        .method .use-cases ul {
+            list-style: disc;
+            padding-left: 20px;
+        }
+
+        .code-block {
+            background-color: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+
+        .example {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .example h4 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+
+        .observable {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .observable h4 {
+            color: #0c5460;
+            margin-bottom: 10px;
+        }
+
+        .data-structure {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .data-structure h4 {
+            color: #155724;
+            margin-bottom: 10px;
+        }
+
+        .best-practices {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .best-practices h4 {
+            color: #721c24;
+            margin-bottom: 15px;
+        }
+
+        .best-practices ol {
+            padding-left: 20px;
+        }
+
+        .best-practices li {
+            margin: 8px 0;
+        }
+
+        .nav {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: white;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 250px;
+        }
+
+        .nav h3 {
+            color: #007bff;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .nav ul {
+            list-style: none;
+        }
+
+        .nav li {
+            margin: 5px 0;
+        }
+
+        .nav a {
+            color: #666;
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: color 0.3s;
+        }
+
+        .nav a:hover {
+            color: #007bff;
+        }
+
+        @media (max-width: 768px) {
+            .nav {
+                position: static;
+                margin-bottom: 20px;
+                max-width: none;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>RaceBox BLE Client API Documentation</h1>
+            <p>A reactive interface for communicating with RaceBox devices (Mini, Mini S, Micro)</p>
+        </div>
+
+        <div class="nav">
+            <h3>Quick Navigation</h3>
+            <ul>
+                <li><a href="#overview">Overview</a></li>
+                <li><a href="#data-streams">Data Streams</a></li>
+                <li><a href="#commands">Commands</a></li>
+                <li><a href="#utility-methods">Utility Methods</a></li>
+                <li><a href="#use-cases">Use Case Examples</a></li>
+                <li><a href="#stream-behavior">Stream Behavior</a></li>
+                <li><a href="#best-practices">Best Practices</a></li>
+            </ul>
+        </div>
+
+        <div class="toc">
+            <h2>📋 Table of Contents</h2>
+            <ul>
+                <li><a href="#overview">Overview</a></li>
+                <li><a href="#data-streams">📊 Data Streams (Observables)</a></li>
+                <li><a href="#commands">⚙️ Commands (Promises)</a></li>
+                <li><a href="#utility-methods">🔧 Utility Methods</a></li>
+                <li><a href="#use-cases">📱 Use Case Examples</a></li>
+                <li><a href="#stream-behavior">🔄 Stream Behavior</a></li>
+                <li><a href="#best-practices">✅ Best Practices</a></li>
+            </ul>
+        </div>
+
+        <div id="overview" class="section">
+            <h2>Overview</h2>
+            <p>The RaceBox BLE Client provides a reactive interface for communicating with RaceBox devices (Mini, Mini S, Micro). It handles all protocol messages and provides both streaming data and command-based interactions.</p>
+        </div>
+
+        <div id="data-streams" class="section">
+            <h2>📊 Data Streams (Observables)</h2>
+
+            <h3>Live Data Streams</h3>
+            <p>These streams provide real-time data from the device.</p>
+
+            <div class="observable">
+                <h4><code>liveData$: Observable&lt;LiveDataMessage&gt;</code></h4>
+                <div class="description"><strong>Description:</strong> Raw sensor data including GNSS, accelerometer, gyroscope, and system information.</div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>Real-time data logging</li>
+                        <li>Sensor data analysis</li>
+                        <li>Performance monitoring</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="observable">
+                <h4><code>position$: Observable&lt;Position&gt;</code></h4>
+                <div class="description"><strong>Description:</strong> GPS position data with converted coordinates and accuracy.</div>
+                <div class="data-structure">
+                    <h5>Data:</h5>
+                    <code>{ latitude, longitude, altitude, accuracy, timestamp }</code>
+                </div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>Map display</li>
+                        <li>Route tracking</li>
+                        <li>Location-based features</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="observable">
+                <h4><code>motion$: Observable&lt;MotionData&gt;</code></h4>
+                <div class="description"><strong>Description:</strong> Motion data including speed, heading, G-forces, and rotation rates.</div>
+                <div class="data-structure">
+                    <h5>Data:</h5>
+                    <code>{ speed, heading, gForce: {x,y,z}, rotationRate: {x,y,z}, timestamp }</code>
+                </div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>Performance analysis</li>
+                        <li>Driving behavior monitoring</li>
+                        <li>Motion visualization</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="observable">
+                <h4><code>deviceState$: Observable&lt;DeviceState&gt;</code></h4>
+                <div class="description"><strong>Description:</strong> Complete device state including connection, GNSS, recording, and memory status.</div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>Status dashboard</li>
+                        <li>Device monitoring</li>
+                        <li>State synchronization</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>Historical Data Streams</h3>
+
+            <div class="observable">
+                <h4><code>historyData$: Observable&lt;HistoryDataMessage&gt;</code></h4>
+                <div class="description"><strong>Description:</strong> Downloaded historical data during memory operations.</div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>Data playback</li>
+                        <li>Historical analysis</li>
+                        <li>Data export</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="observable">
+                <h4><code>recordingState$: Observable&lt;RecordingState&gt;</code></h4>
+                <div class="description"><strong>Description:</strong> Current recording status and configuration.</div>
+                <div class="data-structure">
+                    <h5>Data:</h5>
+                    <code>{ status, memoryLevel, storedMessages, totalCapacity, securityEnabled, memoryUnlocked }</code>
+                </div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>Recording status display</li>
+                        <li>Memory management</li>
+                        <li>Security status monitoring</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="observable">
+                <h4><code>downloadProgress$: Observable&lt;number&gt;</code></h4>
+                <div class="description"><strong>Description:</strong> Download progress percentage (0-100).</div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>Progress indicators</li>
+                        <li>Download status display</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>Configuration Streams</h3>
+
+            <div class="observable">
+                <h4><code>deviceConfig$: Observable&lt;DeviceInfo&gt;</code></h4>
+                <div class="description"><strong>Description:</strong> Device information and capabilities.</div>
+                <div class="data-structure">
+                    <h5>Data:</h5>
+                    <code>{ name, model, serialNumber, firmwareVersion, hardwareRevision, manufacturer }</code>
+                </div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>Device identification</li>
+                        <li>Capability detection</li>
+                        <li>Version checking</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="observable">
+                <h4><code>recordingConfig$: Observable&lt;RecordingConfiguration&gt;</code></h4>
+                <div class="description"><strong>Description:</strong> Current recording configuration settings.</div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>Configuration display</li>
+                        <li>Settings management</li>
+                        <li>Configuration validation</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="observable">
+                <h4><code>gnssConfig$: Observable&lt;GNSSConfiguration&gt;</code></h4>
+                <div class="description"><strong>Description:</strong> Current GNSS receiver configuration.</div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>GNSS settings display</li>
+                        <li>Configuration management</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>Error Streams</h3>
+
+            <div class="observable">
+                <h4><code>connectionErrors$: Observable&lt;RaceBoxError&gt;</code></h4>
+                <div class="description"><strong>Description:</strong> BLE connection-related errors.</div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>Connection status monitoring</li>
+                        <li>Reconnection logic</li>
+                        <li>Error reporting</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="observable">
+                <h4><code>protocolErrors$: Observable&lt;RaceBoxError&gt;</code></h4>
+                <div class="description"><strong>Description:</strong> Protocol-related errors (invalid packets, checksums).</div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>Data integrity monitoring</li>
+                        <li>Protocol debugging</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="observable">
+                <h4><code>deviceErrors$: Observable&lt;RaceBoxError&gt;</code></h4>
+                <div class="description"><strong>Description:</strong> Device-specific errors (unsupported commands, memory errors).</div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>Device capability detection</li>
+                        <li>Error recovery</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="observable">
+                <h4><code>allErrors$: Observable&lt;RaceBoxError&gt;</code></h4>
+                <div class="description"><strong>Description:</strong> Combined error stream from all error sources.</div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>Global error handling</li>
+                        <li>Error logging</li>
+                        <li>User notifications</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div id="commands" class="section">
+            <h2>⚙️ Commands (Promises)</h2>
+
+            <h3>Configuration Commands</h3>
+
+            <div class="method">
+                <h4><code>configureGNSS(config: GNSSConfiguration): Promise&lt;void&gt;</code></h4>
+                <div class="description"><strong>Description:</strong> Configure GNSS receiver settings.</div>
+                <div class="parameters">
+                    <h5>Parameters:</h5>
+                    <ul>
+                        <li><code>platformModel</code> - Dynamic platform model (0-8)</li>
+                        <li><code>enable3DSpeed</code> - Enable 3D speed reporting</li>
+                        <li><code>minHorizontalAccuracy</code> - Minimum accuracy required (meters)</li>
+                    </ul>
+                </div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>Optimize for different use cases (automotive, marine, airborne)</li>
+                        <li>Enable/disable 3D speed reporting</li>
+                        <li>Set accuracy requirements</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="method">
+                <h4><code>configureRecording(config: RecordingConfiguration): Promise&lt;void&gt;</code></h4>
+                <div class="description"><strong>Description:</strong> Configure recording settings without starting recording.</div>
+                <div class="parameters">
+                    <h5>Parameters:</h5>
+                    <ul>
+                        <li><code>enableRecording</code> - Enable/disable recording</li>
+                        <li><code>dataRate</code> - Recording frequency (0-4)</li>
+                        <li><code>filters</code> - Filter flags (bitmask)</li>
+                        <li><code>stationarySpeedThreshold</code> - Speed threshold for stationary detection</li>
+                        <li><code>stationaryTimeout</code> - Timeout for stationary detection</li>
+                        <li><code>noFixTimeout</code> - Timeout for no-fix conditions</li>
+                        <li><code>autoShutdownTimeout</code> - Auto-shutdown timeout</li>
+                    </ul>
+                </div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>Set up recording parameters before starting</li>
+                        <li>Modify recording settings while recording</li>
+                        <li>Configure filters and timeouts</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>Recording Control Commands</h3>
+
+            <div class="method">
+                <h4><code>startRecording(): Promise&lt;void&gt;</code></h4>
+                <div class="description"><strong>Description:</strong> Start recording with current configuration.</div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>Begin data recording</li>
+                        <li>Start standalone recording</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="method">
+                <h4><code>stopRecording(): Promise&lt;void&gt;</code></h4>
+                <div class="description"><strong>Description:</strong> Stop current recording.</div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>End recording session</li>
+                        <li>Pause for configuration changes</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="method">
+                <h4><code>pauseRecording(): Promise&lt;void&gt;</code></h4>
+                <div class="description"><strong>Description:</strong> Pause current recording (Mini S/Micro only).</div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>Temporary recording pause</li>
+                        <li>Configuration changes during recording</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>Memory Operations</h3>
+
+            <div class="method">
+                <h4><code>downloadHistory(): Promise&lt;HistoryDataMessage[]&gt;</code></h4>
+                <div class="description"><strong>Description:</strong> Download all recorded data from device memory.</div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>Data export</li>
+                        <li>Historical analysis</li>
+                        <li>Backup operations</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="method">
+                <h4><code>eraseMemory(): Promise&lt;void&gt;</code></h4>
+                <div class="description"><strong>Description:</strong> Erase all recorded data from device memory.</div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>Memory cleanup</li>
+                        <li>Fresh start</li>
+                        <li>Privacy protection</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="method">
+                <h4><code>unlockMemory(securityCode: number): Promise&lt;void&gt;</code></h4>
+                <div class="description"><strong>Description:</strong> Unlock memory with security code.</div>
+                <div class="parameters">
+                    <h5>Parameters:</h5>
+                    <ul>
+                        <li><code>securityCode</code> - 4-byte security code</li>
+                    </ul>
+                </div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>Access protected memory</li>
+                        <li>Security management</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>State Queries</h3>
+
+            <div class="method">
+                <h4><code>getConnectionState(): Promise&lt;ConnectionState&gt;</code></h4>
+                <div class="description"><strong>Description:</strong> Get current connection status.</div>
+                <div class="data-structure">
+                    <h5>Returns:</h5>
+                    <code>{ status, deviceId?, error?, lastConnected? }</code>
+                </div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>Connection status checking</li>
+                        <li>Error diagnosis</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="method">
+                <h4><code>getDeviceInfo(): Promise&lt;DeviceInfo&gt;</code></h4>
+                <div class="description"><strong>Description:</strong> Get device information and capabilities.</div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>Device identification</li>
+                        <li>Capability detection</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="method">
+                <h4><code>getRecordingStatus(): Promise&lt;RecordingState&gt;</code></h4>
+                <div class="description"><strong>Description:</strong> Get current recording status and memory information.</div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>Status display</li>
+                        <li>Memory management</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="method">
+                <h4><code>getGNSSState(): Promise&lt;GNSSState&gt;</code></h4>
+                <div class="description"><strong>Description:</strong> Get current GNSS fix status and satellite information.</div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>GNSS status display</li>
+                        <li>Fix quality monitoring</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="method">
+                <h4><code>getMemoryState(): Promise&lt;MemoryState&gt;</code></h4>
+                <div class="description"><strong>Description:</strong> Get memory status and security information.</div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>Memory management</li>
+                        <li>Security status</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div id="utility-methods" class="section">
+            <h2>🔧 Utility Methods</h2>
+
+            <div class="method">
+                <h4><code>isConnected(): boolean</code></h4>
+                <div class="description"><strong>Description:</strong> Check if device is currently connected.</div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>Quick connection check</li>
+                        <li>Conditional operations</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="method">
+                <h4><code>getConfig(): RaceBoxConfig</code></h4>
+                <div class="description"><strong>Description:</strong> Get current client configuration.</div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>Configuration inspection</li>
+                        <li>Settings management</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="method">
+                <h4><code>updateConfig(config: Partial&lt;RaceBoxConfig&gt;): void</code></h4>
+                <div class="description"><strong>Description:</strong> Update client configuration.</div>
+                <div class="use-cases">
+                    <h5>Use Cases:</h5>
+                    <ul>
+                        <li>Runtime configuration changes</li>
+                        <li>Performance tuning</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div id="use-cases" class="section">
+            <h2>📱 Use Case Examples</h2>
+
+            <div class="example">
+                <h4>1. Standalone Recording Screen</h4>
+                <p><strong>Purpose:</strong> Manage recording status and configuration.</p>
+                
+                <h5>Observables to use:</h5>
+                <ul>
+                    <li><code>recordingState$</code> - Monitor recording status and memory</li>
+                    <li><code>recordingConfig$</code> - Display current configuration</li>
+                    <li><code>allErrors$</code> - Handle errors</li>
+                </ul>
+
+                <h5>Commands to use:</h5>
+                <ul>
+                    <li><code>configureRecording()</code> - Update settings</li>
+                    <li><code>startRecording()</code> - Begin recording</li>
+                    <li><code>stopRecording()</code> - End recording</li>
+                    <li><code>pauseRecording()</code> - Pause recording</li>
+                </ul>
+
+                <div class="code-block">
+// Subscribe to recording state changes
+racebox.recordingState$.subscribe(state => {
+  updateRecordingStatus(state);
+  updateMemoryDisplay(state.memoryLevel);
+});
+
+// Subscribe to configuration changes
+racebox.recordingConfig$.subscribe(config => {
+  updateConfigurationDisplay(config);
+});
+
+// Subscribe to errors
+racebox.allErrors$.subscribe(error => {
+  showErrorMessage(error);
+});
+
+// User actions
+async function startRecording() {
+  try {
+    await racebox.startRecording();
+    showSuccessMessage('Recording started');
+  } catch (error) {
+    showErrorMessage('Failed to start recording');
+  }
+}
+
+async function updateConfiguration(newConfig: RecordingConfiguration) {
+  try {
+    await racebox.configureRecording(newConfig);
+    showSuccessMessage('Configuration updated');
+  } catch (error) {
+    showErrorMessage('Failed to update configuration');
+  }
+}
+                </div>
+            </div>
+
+            <div class="example">
+                <h4>2. Real-time Data Dashboard</h4>
+                <p><strong>Purpose:</strong> Display live sensor data and device status.</p>
+                
+                <h5>Observables to use:</h5>
+                <ul>
+                    <li><code>liveData$</code> - Raw sensor data</li>
+                    <li><code>position$</code> - GPS position</li>
+                    <li><code>motion$</code> - Motion data</li>
+                    <li><code>deviceState$</code> - Device status</li>
+                    <li><code>gnssState$</code> - GNSS status</li>
+                </ul>
+
+                <div class="code-block">
+// Combine multiple streams for dashboard
+combineLatest([
+  racebox.position$,
+  racebox.motion$,
+  racebox.deviceState$
+]).subscribe(([position, motion, deviceState]) => {
+  updateDashboard({
+    position,
+    motion,
+    deviceState
+  });
+});
+
+// Monitor GNSS status separately
+racebox.gnssState$.subscribe(gnssState => {
+  updateGNSSStatus(gnssState);
+});
+                </div>
+            </div>
+
+            <div class="example">
+                <h4>3. Data Download Manager</h4>
+                <p><strong>Purpose:</strong> Download and manage historical data.</p>
+                
+                <h5>Observables to use:</h5>
+                <ul>
+                    <li><code>downloadProgress$</code> - Download progress</li>
+                    <li><code>historyData$</code> - Downloaded data</li>
+                    <li><code>memoryState$</code> - Memory status</li>
+                </ul>
+
+                <h5>Commands to use:</h5>
+                <ul>
+                    <li><code>downloadHistory()</code> - Start download</li>
+                    <li><code>eraseMemory()</code> - Clear memory</li>
+                    <li><code>unlockMemory()</code> - Unlock protected memory</li>
+                </ul>
+
+                <div class="code-block">
+// Monitor download progress
+racebox.downloadProgress$.subscribe(progress => {
+  updateProgressBar(progress);
+});
+
+// Handle downloaded data
+racebox.historyData$.subscribe(data => {
+  processHistoricalData(data);
+});
+
+// Download management
+async function downloadAllData() {
+  try {
+    const data = await racebox.downloadHistory();
+    saveToFile(data);
+    showSuccessMessage('Download completed');
+  } catch (error) {
+    showErrorMessage('Download failed');
+  }
+}
+
+async function clearMemory() {
+  try {
+    await racebox.eraseMemory();
+    showSuccessMessage('Memory cleared');
+  } catch (error) {
+    showErrorMessage('Failed to clear memory');
+  }
+}
+                </div>
+            </div>
+
+            <div class="example">
+                <h4>4. Device Configuration Screen</h4>
+                <p><strong>Purpose:</strong> Configure device settings and GNSS parameters.</p>
+                
+                <h5>Observables to use:</h5>
+                <ul>
+                    <li><code>deviceConfig$</code> - Device information</li>
+                    <li><code>gnssConfig$</code> - Current GNSS settings</li>
+                    <li><code>recordingConfig$</code> - Current recording settings</li>
+                </ul>
+
+                <h5>Commands to use:</h5>
+                <ul>
+                    <li><code>configureGNSS()</code> - Update GNSS settings</li>
+                    <li><code>configureRecording()</code> - Update recording settings</li>
+                </ul>
+
+                <div class="code-block">
+// Display current device info
+racebox.deviceConfig$.subscribe(deviceInfo => {
+  updateDeviceInfo(deviceInfo);
+});
+
+// Display current GNSS settings
+racebox.gnssConfig$.subscribe(gnssConfig => {
+  updateGNSSSettings(gnssConfig);
+});
+
+// Update GNSS configuration
+async function updateGNSSSettings(newConfig: GNSSConfiguration) {
+  try {
+    await racebox.configureGNSS(newConfig);
+    showSuccessMessage('GNSS settings updated');
+  } catch (error) {
+    showErrorMessage('Failed to update GNSS settings');
+  }
+}
+                </div>
+            </div>
+
+            <div class="example">
+                <h4>5. Error Handling and Recovery</h4>
+                <p><strong>Purpose:</strong> Handle errors and implement recovery strategies.</p>
+                
+                <h5>Observables to use:</h5>
+                <ul>
+                    <li><code>connectionErrors$</code> - Connection issues</li>
+                    <li><code>protocolErrors$</code> - Protocol errors</li>
+                    <li><code>deviceErrors$</code> - Device errors</li>
+                    <li><code>allErrors$</code> - All errors</li>
+                </ul>
+
+                <div class="code-block">
+// Handle different error types
+racebox.connectionErrors$.subscribe(error => {
+  handleConnectionError(error);
+});
+
+racebox.protocolErrors$.subscribe(error => {
+  handleProtocolError(error);
+});
+
+racebox.deviceErrors$.subscribe(error => {
+  handleDeviceError(error);
+});
+
+// Global error handling
+racebox.allErrors$.subscribe(error => {
+  logError(error);
+  notifyUser(error);
+  
+  // Implement recovery strategies
+  if (error.recoverable) {
+    attemptRecovery(error);
+  }
+});
+
+function handleConnectionError(error: RaceBoxError) {
+  if (error.type === 'connection') {
+    // Attempt reconnection
+    setTimeout(() => {
+      reconnect();
+    }, 5000);
+  }
+}
+                </div>
+            </div>
+        </div>
+
+        <div id="stream-behavior" class="section">
+            <h2>🔄 Stream Behavior</h2>
+
+            <h3>Observable Lifecycle</h3>
+            <ul>
+                <li><strong>Live Data Streams:</strong> Emit continuously while connected</li>
+                <li><strong>Configuration Streams:</strong> Emit on configuration changes</li>
+                <li><strong>Error Streams:</strong> Emit on error occurrence</li>
+                <li><strong>State Streams:</strong> Emit on state changes</li>
+            </ul>
+
+            <h3>Error Handling</h3>
+            <ul>
+                <li><strong>Promise Rejection:</strong> Commands reject on NACK or timeout</li>
+                <li><strong>Stream Errors:</strong> Error streams emit error objects</li>
+                <li><strong>Recovery:</strong> Automatic recovery for recoverable errors</li>
+            </ul>
+
+            <h3>Performance Considerations</h3>
+            <ul>
+                <li><strong>Stream Sharing:</strong> Use <code>share()</code> for expensive streams</li>
+                <li><strong>Memory Management:</strong> Properly unsubscribe from streams</li>
+                <li><strong>Buffer Management:</strong> Limit buffer sizes for high-frequency streams</li>
+            </ul>
+        </div>
+
+        <div id="best-practices" class="section">
+            <h2>✅ Best Practices</h2>
+
+            <div class="best-practices">
+                <ol>
+                    <li><strong>Always handle errors</strong> from both Promises and Observables</li>
+                    <li><strong>Unsubscribe from streams</strong> when components are destroyed</li>
+                    <li><strong>Use appropriate error recovery</strong> strategies</li>
+                    <li><strong>Monitor stream performance</strong> for high-frequency data</li>
+                    <li><strong>Validate configuration</strong> before sending commands</li>
+                    <li><strong>Implement proper state management</strong> for UI updates</li>
+                    <li><strong>Use TypeScript strictly</strong> for type safety</li>
+                    <li><strong>Test error scenarios</strong> thoroughly</li>
+                </ol>
+            </div>
+
+            <p>This API provides a comprehensive interface for all RaceBox protocol features while maintaining clean separation between streaming data and command operations.</p>
+        </div>
+    </div>
+</body>
+</html> 
