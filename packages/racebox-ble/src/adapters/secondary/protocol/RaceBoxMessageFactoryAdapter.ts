@@ -11,7 +11,6 @@ export class RaceBoxMessageFactoryAdapter implements MessageFactoryPort {
 
   // RaceBox message class and ID constants
   private static readonly RACEBOX_CLASS = 0xFF;
-  private static readonly RACEBOX_LIVE_DATA_ID = 0x01;
   private static readonly RACEBOX_GNSS_CONFIG_ID = 0x27;
   private static readonly RACEBOX_RECORDING_CONFIG_ID = 0x22;
   private static readonly RACEBOX_START_RECORDING_ID = 0x25;
@@ -21,7 +20,6 @@ export class RaceBoxMessageFactoryAdapter implements MessageFactoryPort {
   private static readonly RACEBOX_ERASE_MEMORY_ID = 0x24;
   private static readonly RACEBOX_UNLOCK_MEMORY_ID = 0x30;
   private static readonly RACEBOX_ACK_ID = 0x05;
-  private static readonly RACEBOX_NACK_ID = 0x00;
 
   // GNSS configuration messages
   createGNSSConfigRequest(): RaceBoxMessage {
@@ -183,8 +181,11 @@ export class RaceBoxMessageFactoryAdapter implements MessageFactoryPort {
     let checksumB = 0;
 
     for (let i = 0; i < data.length; i++) {
-      checksumA = (checksumA + data[i]) & 0xFF;
-      checksumB = (checksumB + checksumA) & 0xFF;
+      const byte = data[i];
+      if (byte !== undefined) {
+        checksumA = (checksumA + byte) & 0xFF;
+        checksumB = (checksumB + checksumA) & 0xFF;
+      }
     }
 
     return [checksumA, checksumB];

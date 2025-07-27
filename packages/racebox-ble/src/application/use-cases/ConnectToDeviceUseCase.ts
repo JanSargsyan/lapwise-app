@@ -42,12 +42,13 @@ export class ConnectToDeviceUseCase {
         };
       } catch (error) {
         lastError = this.errorHandler.handleConnectionError({
-          ...error,
+          message: error instanceof Error ? error.message : 'Connection failed',
+          code: (error as any)?.code || 'CONNECTION_FAILED',
           deviceId,
           retryCount: attempt
         });
 
-        // If this is the last attempt, throw the error
+        // If this is the last attempt, return error response
         if (attempt === retryAttempts) {
           return {
             success: false,

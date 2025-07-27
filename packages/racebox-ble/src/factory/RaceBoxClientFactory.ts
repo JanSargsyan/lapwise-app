@@ -3,7 +3,6 @@ import { RaceBoxClientAdapter } from '../adapters/primary/RaceBoxClientAdapter';
 import { ReactNativeBLEPLXAdapter } from '../adapters/secondary/ble/ReactNativeBLEPLXAdapter';
 import { UBXPacketParserAdapter } from '../adapters/secondary/protocol/UBXPacketParserAdapter';
 import { RaceBoxMessageFactoryAdapter } from '../adapters/secondary/protocol/RaceBoxMessageFactoryAdapter';
-import { RaceBoxDataConverterAdapter } from '../adapters/secondary/data/RaceBoxDataConverterAdapter';
 import { RaceBoxErrorHandlerAdapter } from '../adapters/secondary/error/RaceBoxErrorHandlerAdapter';
 
 // Interface for react-native-ble-plx Device
@@ -29,81 +28,64 @@ interface Device {
 
 export class RaceBoxClientFactory {
   /**
-   * Creates a RaceBox client instance with all dependencies properly configured
-   * @param bleDevice - The react-native-ble-plx Device instance
-   * @param config - Optional configuration overrides
-   * @returns A fully configured RaceBox client
+   * Creates a production RaceBox client with all dependencies
    */
-  static createClient(bleDevice: Device, config?: Partial<any>): RaceBoxClientPort {
-    // Create secondary adapters (infrastructure layer)
-    const bleAdapter = new ReactNativeBLEPLXAdapter(bleDevice);
+  static createClient(device: Device): RaceBoxClientPort {
+    // Create secondary adapters
+    const bleDevice = new ReactNativeBLEPLXAdapter(device);
     const packetParser = new UBXPacketParserAdapter();
     const messageFactory = new RaceBoxMessageFactoryAdapter();
-    const dataConverter = new RaceBoxDataConverterAdapter();
     const errorHandler = new RaceBoxErrorHandlerAdapter();
 
-    // Create primary adapter (application layer)
+    // Create primary adapter
     const client = new RaceBoxClientAdapter(
-      bleAdapter,
+      bleDevice,
       packetParser,
       messageFactory,
-      dataConverter,
       errorHandler
     );
-
-    // Apply configuration if provided
-    if (config) {
-      client.updateConfig(config);
-    }
 
     return client;
   }
 
   /**
-   * Creates a mock client for testing purposes
-   * @param mockBleDevice - Mock BLE device implementation
-   * @returns A RaceBox client with mock dependencies
+   * Creates a mock client for testing
    */
-  static createMockClient(mockBleDevice: any): RaceBoxClientPort {
-    // Create mock adapters for testing
-    const bleAdapter = mockBleDevice;
-    const packetParser = new UBXPacketParserAdapter();
-    const messageFactory = new RaceBoxMessageFactoryAdapter();
-    const dataConverter = new RaceBoxDataConverterAdapter();
-    const errorHandler = new RaceBoxErrorHandlerAdapter();
+  static createMockClient(): RaceBoxClientPort {
+    // Create mock device
+    const mockDevice: Device = {
+      id: 'mock-device-id',
+      name: 'Mock RaceBox',
+      rssi: -50,
+      connect: async () => mockDevice,
+      disconnect: async () => mockDevice,
+      discoverAllServicesAndCharacteristics: async () => mockDevice,
+      writeCharacteristicWithResponseForService: async () => ({}),
+      monitorCharacteristicForService: () => {},
+      isConnected: async () => true
+    };
 
     return new RaceBoxClientAdapter(
-      bleAdapter,
-      packetParser,
-      messageFactory,
-      dataConverter,
-      errorHandler
+      new ReactNativeBLEPLXAdapter(mockDevice),
+      new UBXPacketParserAdapter(),
+      new RaceBoxMessageFactoryAdapter(),
+      new RaceBoxErrorHandlerAdapter()
     );
   }
 
   /**
-   * Creates a client with custom adapters for advanced use cases
-   * @param adapters - Object containing custom adapter implementations
-   * @returns A RaceBox client with custom adapters
+   * Creates a custom client with specific dependencies
    */
-  static createCustomClient(adapters: {
-    bleDevice?: any;
-    packetParser?: any;
-    messageFactory?: any;
-    dataConverter?: any;
-    errorHandler?: any;
-  }): RaceBoxClientPort {
-    const bleAdapter = adapters.bleDevice || new ReactNativeBLEPLXAdapter({} as Device);
-    const packetParser = adapters.packetParser || new UBXPacketParserAdapter();
-    const messageFactory = adapters.messageFactory || new RaceBoxMessageFactoryAdapter();
-    const dataConverter = adapters.dataConverter || new RaceBoxDataConverterAdapter();
-    const errorHandler = adapters.errorHandler || new RaceBoxErrorHandlerAdapter();
-
+  static createCustomClient(
+    bleDevice: any,
+    packetParser: any,
+    messageFactory: any,
+    errorHandler: any
+  ): RaceBoxClientPort {
     return new RaceBoxClientAdapter(
-      bleAdapter,
+      bleDevice,
       packetParser,
       messageFactory,
-      dataConverter,
       errorHandler
     );
   }

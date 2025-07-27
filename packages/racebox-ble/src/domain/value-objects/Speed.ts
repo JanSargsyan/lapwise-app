@@ -13,7 +13,7 @@ export class SpeedValueObject {
 
   private validate(): void {
     if (this.value < 0) {
-      throw new Error('Speed must be non-negative');
+      throw new Error('Speed value must be non-negative');
     }
     if (this.accuracy < 0) {
       throw new Error('Speed accuracy must be non-negative');
@@ -27,16 +27,8 @@ export class SpeedValueObject {
     };
   }
 
-  public static fromInterface(speed: Speed): SpeedValueObject {
-    return new SpeedValueObject(speed.value, speed.accuracy);
-  }
-
   public static fromRawData(speedRaw: number, accuracyRaw: number): SpeedValueObject {
-    // Convert from mm/s to km/h
-    const value = (speedRaw / 1000) * 3.6; // mm/s to km/h
-    const accuracy = (accuracyRaw / 1000) * 3.6; // mm/s to km/h
-
-    return new SpeedValueObject(value, accuracy);
+    return new SpeedValueObject(speedRaw / 1000, accuracyRaw / 1000);
   }
 
   public equals(other: SpeedValueObject): boolean {
@@ -44,7 +36,7 @@ export class SpeedValueObject {
   }
 
   public toString(): string {
-    return `${this.value.toFixed(1)} km/h ±${this.accuracy.toFixed(1)} km/h`;
+    return `Speed(${this.value} km/h ± ${this.accuracy} km/h)`;
   }
 
   public toMph(): number {

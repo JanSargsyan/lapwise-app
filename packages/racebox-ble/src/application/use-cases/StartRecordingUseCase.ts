@@ -51,7 +51,8 @@ export class StartRecordingUseCase {
       };
     } catch (error) {
       const raceBoxError = this.errorHandler.handleDeviceError({
-        ...error,
+        message: error instanceof Error ? error.message : 'Start recording failed',
+        code: 'START_FAILED',
         command: 'StartRecording'
       });
 

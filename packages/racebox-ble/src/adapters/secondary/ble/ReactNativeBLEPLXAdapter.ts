@@ -1,5 +1,4 @@
-import { Observable, Subject, fromEvent, throwError } from 'rxjs';
-import { map, catchError, filter } from 'rxjs/operators';
+import { Observable, Subject, throwError } from 'rxjs';
 import { BLEDevicePort, BLEDeviceInfo, BLEError, ConnectionState } from '../../../ports/secondary/BLEDevicePort';
 
 // Import react-native-ble-plx types
@@ -56,7 +55,7 @@ export class ReactNativeBLEPLXAdapter implements BLEDevicePort {
       const bleError: BLEError = {
         type: 'connection',
         message: `Failed to connect to device ${deviceId}`,
-        code: error?.code || 'CONNECTION_FAILED',
+        code: (error as any)?.code || 'CONNECTION_FAILED',
         deviceId
       };
       this.connectionErrorSubject.next(bleError);
@@ -78,7 +77,7 @@ export class ReactNativeBLEPLXAdapter implements BLEDevicePort {
       const bleError: BLEError = {
         type: 'connection',
         message: 'Failed to disconnect from device',
-        code: error?.code || 'DISCONNECT_FAILED',
+        code: (error as any)?.code || 'DISCONNECT_FAILED',
         deviceId: this.device.id
       };
       this.connectionErrorSubject.next(bleError);
@@ -114,26 +113,22 @@ export class ReactNativeBLEPLXAdapter implements BLEDevicePort {
       const bleError: BLEError = {
         type: 'communication',
         message: 'Failed to send data to device',
-        code: error?.code || 'SEND_FAILED',
+        code: (error as any)?.code || 'SEND_FAILED',
         deviceId: this.device.id
       };
-      this.connectionErrorSubject.next(bleError);
       throw bleError;
     }
   }
 
-  subscribeToCharacteristic(characteristic: string): Observable<Uint8Array> {
+  subscribeToCharacteristic(_characteristic: string): Observable<Uint8Array> {
     if (!this.isConnectedFlag) {
       return throwError(() => new Error('Device not connected'));
     }
 
-    return new Observable<Uint8Array>(observer => {
-      const serviceUUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e'; // UART service
-      const characteristicUUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // UART RX
-
+    return new Observable<Uint8Array>(subscriber => {
       const listener = (error: any, characteristic: Characteristic) => {
         if (error) {
-          observer.error(error);
+          subscriber.error(error);
           return;
         }
 
@@ -142,16 +137,16 @@ export class ReactNativeBLEPLXAdapter implements BLEDevicePort {
             // Convert base64 string back to Uint8Array
             const buffer = Buffer.from(characteristic.value, 'base64');
             const uint8Array = new Uint8Array(buffer);
-            observer.next(uint8Array);
+            subscriber.next(uint8Array);
           } catch (parseError) {
-            observer.error(new Error('Failed to parse characteristic data'));
+            subscriber.error(new Error('Failed to parse characteristic data'));
           }
         }
       };
 
       this.device.monitorCharacteristicForService(
-        serviceUUID,
-        characteristicUUID,
+        '6e400001-b5a3-f393-e0a9-e50e24dcca9e', // UART service
+        '6e400003-b5a3-f393-e0a9-e50e24dcca9e', // UART RX
         listener
       );
 
@@ -178,8 +173,8 @@ export class ReactNativeBLEPLXAdapter implements BLEDevicePort {
       id: this.device.id,
       name: this.device.name,
       rssi: this.device.rssi,
-      manufacturerData: undefined, // Would be extracted from device if available
-      serviceUUIDs: [] // Would be discovered during connection
+      manufacturerData: undefined as any,
+      serviceUUIDs: []
     };
   }
 
@@ -226,17 +221,5 @@ export class ReactNativeBLEPLXAdapter implements BLEDevicePort {
 
   getSignalStrength(): number {
     return this.device.rssi;
-  }
-
-  // Helper method to update connection state
-  private updateConnectionState(state: Partial<ConnectionState>): void {
-    const currentState = {
-      isConnected: this.isConnectedFlag,
-      deviceId: this.device.id,
-      signalStrength: this.device.rssi,
-      lastSeen: new Date(),
-      ...state
-    };
-    this.connectionStateSubject.next(currentState);
   }
 } 

@@ -1,9 +1,8 @@
-import { Observable, Subject, BehaviorSubject } from 'rxjs';
-import { map, filter, bufferTime, scan, share, distinctUntilChanged } from 'rxjs/operators';
+import { Observable, BehaviorSubject } from 'rxjs';
+import { map, filter, bufferTime, share } from 'rxjs/operators';
 import { DataController } from '../controllers/DataController';
 import { LiveDataMessage } from '../../domain/entities/LiveDataMessage';
-import { Position, MotionData } from '../../domain/value-objects';
-import { RaceBoxError } from '../../domain/types/RaceBoxError';
+import { Position } from '../../domain/value-objects';
 
 export interface DataStatistics {
   totalDataPoints: number;
@@ -45,8 +44,8 @@ export class DataProcessingService {
 
   // State
   private dataBuffer: LiveDataMessage[] = [];
-  private lastPosition?: Position;
-  private recordingStartTime?: Date;
+  private lastPosition: Position | null = null;
+  private recordingStartTime: Date | null = null;
 
   constructor(private readonly dataController: DataController) {
     // Initialize streams
@@ -91,7 +90,7 @@ export class DataProcessingService {
 
     // Calculate distance if we have a previous position
     if (this.lastPosition) {
-      const distance = this.calculateDistance(this.lastPosition, data.position);
+      // const _distance = this.calculateDistance(this.lastPosition, data.position);
       // Update total distance in statistics
     }
 
@@ -148,11 +147,18 @@ export class DataProcessingService {
   }
 
   private calculateTotalDistance(data: LiveDataMessage[]): number {
+    if (data.length < 2) {
+      return 0;
+    }
+
     let totalDistance = 0;
-    
     for (let i = 1; i < data.length; i++) {
-      const distance = this.calculateDistance(data[i - 1].position, data[i].position);
-      totalDistance += distance;
+      const prevData = data[i - 1];
+      const currData = data[i];
+      if (prevData && currData) {
+        const distance = this.calculateDistance(prevData.position, currData.position);
+        totalDistance += distance;
+      }
     }
 
     return totalDistance;
@@ -164,12 +170,18 @@ export class DataProcessingService {
 
   // Recording duration calculation
   private calculateRecordingDuration(data: LiveDataMessage[]): number {
-    if (data.length === 0) return 0;
+    if (data.length === 0) {
+      return 0;
+    }
 
-    const startTime = data[0].timestamp;
-    const endTime = data[data.length - 1].timestamp;
+    const startTime = data[0]?.timestamp;
+    const endTime = data[data.length - 1]?.timestamp;
     
-    return (endTime.getTime() - startTime.getTime()) / 1000; // Duration in seconds
+    if (!startTime || !endTime) {
+      return 0;
+    }
+
+    return (endTime.getTime() - startTime.getTime()) / 1000; // Convert to seconds
   }
 
   // Data quality assessment
@@ -250,8 +262,8 @@ export class DataProcessingService {
   // Utility methods
   clearDataBuffer(): void {
     this.dataBuffer = [];
-    this.lastPosition = undefined;
-    this.recordingStartTime = undefined;
+    this.lastPosition = null;
+    this.recordingStartTime = null;
     this.updateStatistics();
   }
 

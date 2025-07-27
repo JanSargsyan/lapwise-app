@@ -1,5 +1,5 @@
-import { GForce } from './GForce';
-import { RotationRate } from './RotationRate';
+import { GForce, GForceValueObject } from './GForce';
+import { RotationRate, RotationRateValueObject } from './RotationRate';
 
 export interface SensorData {
   gForce: GForce;
@@ -9,9 +9,9 @@ export interface SensorData {
 
 export class SensorDataValueObject {
   constructor(
-    public readonly gForce: GForce,
-    public readonly rotationRate: RotationRate,
-    public readonly timestamp: Date = new Date()
+    public readonly gForce: GForceValueObject,
+    public readonly rotationRate: RotationRateValueObject,
+    public readonly timestamp: Date
   ) {}
 
   public toInterface(): SensorData {
@@ -24,8 +24,8 @@ export class SensorDataValueObject {
 
   public static fromInterface(sensorData: SensorData): SensorDataValueObject {
     return new SensorDataValueObject(
-      GForce.fromInterface(sensorData.gForce),
-      RotationRate.fromInterface(sensorData.rotationRate),
+      new GForceValueObject(sensorData.gForce.x, sensorData.gForce.y, sensorData.gForce.z),
+      new RotationRateValueObject(sensorData.rotationRate.x, sensorData.rotationRate.y, sensorData.rotationRate.z),
       sensorData.timestamp
     );
   }
@@ -38,10 +38,14 @@ export class SensorDataValueObject {
     rotationRateYRaw: number,
     rotationRateZRaw: number
   ): SensorDataValueObject {
-    const gForce = GForce.fromRawData(gForceXRaw, gForceYRaw, gForceZRaw);
-    const rotationRate = RotationRate.fromRawData(rotationRateXRaw, rotationRateYRaw, rotationRateZRaw);
+    const gForce = GForceValueObject.fromRawData(gForceXRaw, gForceYRaw, gForceZRaw);
+    const rotationRate = RotationRateValueObject.fromRawData(rotationRateXRaw, rotationRateYRaw, rotationRateZRaw);
 
-    return new SensorDataValueObject(gForce, rotationRate);
+    return new SensorDataValueObject(
+      gForce,
+      rotationRate,
+      new Date()
+    );
   }
 
   public equals(other: SensorDataValueObject): boolean {
@@ -52,14 +56,14 @@ export class SensorDataValueObject {
   }
 
   public toString(): string {
-    return `G-Force: ${this.gForce.toString()}, Rotation: ${this.rotationRate.toString()}`;
+    return `SensorData(${this.gForce.toString()}, ${this.rotationRate.toString()})`;
   }
 
   public isStationary(): boolean {
     return this.gForce.isStationary() && this.rotationRate.isStationary();
   }
 
-  public getAccelerationMagnitude(): number {
+  public getGForceMagnitude(): number {
     return this.gForce.getMagnitude();
   }
 

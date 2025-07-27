@@ -47,7 +47,8 @@ export class ConfigureRecordingUseCase {
       };
     } catch (error) {
       const raceBoxError = this.errorHandler.handleDeviceError({
-        ...error,
+        message: error instanceof Error ? error.message : 'Configuration failed',
+        code: 'CONFIGURATION_FAILED',
         command: 'ConfigureRecording',
         details: { config }
       });

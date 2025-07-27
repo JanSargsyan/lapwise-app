@@ -13,7 +13,7 @@ export class HeadingValueObject {
 
   private validate(): void {
     if (this.value < 0 || this.value > 360) {
-      throw new Error('Heading must be between 0 and 360 degrees');
+      throw new Error('Heading value must be between 0 and 360 degrees');
     }
     if (this.accuracy < 0) {
       throw new Error('Heading accuracy must be non-negative');
@@ -25,10 +25,6 @@ export class HeadingValueObject {
       value: this.value,
       accuracy: this.accuracy
     };
-  }
-
-  public static fromInterface(heading: Heading): HeadingValueObject {
-    return new HeadingValueObject(heading.value, heading.accuracy);
   }
 
   public static fromRawData(headingRaw: number, accuracyRaw: number): HeadingValueObject {
@@ -44,16 +40,19 @@ export class HeadingValueObject {
   }
 
   public toString(): string {
-    return `${this.value.toFixed(1)}° ±${this.accuracy.toFixed(1)}°`;
+    return `Heading(${this.value.toFixed(1)}° ± ${this.accuracy.toFixed(1)}°)`;
   }
 
   public toRadians(): number {
-    return (this.value * Math.PI) / 180;
+    return this.value * (Math.PI / 180);
   }
 
   public getDirection(): string {
-    const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+    const directions = [
+      'N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE',
+      'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'
+    ];
     const index = Math.round(this.value / 22.5) % 16;
-    return directions[index];
+    return directions[index] || 'N';
   }
 } 

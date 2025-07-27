@@ -1,13 +1,12 @@
-import { Observable, Subject, combineLatest, merge, of, throwError } from 'rxjs';
-import { map, catchError, filter, share, startWith, distinctUntilChanged } from 'rxjs/operators';
+import { Observable, Subject, merge, throwError } from 'rxjs';
+import { map, catchError, share } from 'rxjs/operators';
 import { RaceBoxClientPort, DeviceInfo, RecordingState, ConnectionState, MemoryStatus, RaceBoxConfig } from '../../ports/primary/RaceBoxClientPort';
 import { BLEDevicePort } from '../../ports/secondary/BLEDevicePort';
 import { PacketParserPort } from '../../ports/secondary/PacketParserPort';
 import { MessageFactoryPort } from '../../ports/secondary/MessageFactoryPort';
-import { DataConverterPort } from '../../ports/secondary/DataConverterPort';
 import { ErrorHandlerPort } from '../../ports/secondary/ErrorHandlerPort';
 import { LiveDataMessage, RecordingConfiguration, GNSSConfiguration } from '../../domain/entities';
-import { Position, MotionData, GNSSStatus, SystemStatus, SensorData } from '../../domain/value-objects';
+import { Position, MotionData, GNSSStatus } from '../../domain/value-objects';
 import { RaceBoxError } from '../../domain/types/RaceBoxError';
 
 export class RaceBoxClientAdapter implements RaceBoxClientPort {
@@ -58,7 +57,7 @@ export class RaceBoxClientAdapter implements RaceBoxClientPort {
   };
 
   // State tracking
-  private isConnected = false;
+  private isConnectedFlag = false;
   private currentRecordingState: RecordingState = {
     isRecording: false,
     isPaused: false,
@@ -71,7 +70,6 @@ export class RaceBoxClientAdapter implements RaceBoxClientPort {
     private readonly bleDevice: BLEDevicePort,
     private readonly packetParser: PacketParserPort,
     private readonly messageFactory: MessageFactoryPort,
-    private readonly dataConverter: DataConverterPort,
     private readonly errorHandler: ErrorHandlerPort
   ) {
     // Initialize streams
@@ -224,7 +222,7 @@ export class RaceBoxClientAdapter implements RaceBoxClientPort {
   // State queries (Promises for one-time state checks)
   async getConnectionState(): Promise<ConnectionState> {
     return {
-      isConnected: this.isConnected,
+      isConnected: this.isConnectedFlag,
       deviceId: this.bleDevice.getDeviceId(),
       signalStrength: this.bleDevice.getSignalStrength(),
       lastSeen: new Date()
@@ -279,7 +277,7 @@ export class RaceBoxClientAdapter implements RaceBoxClientPort {
 
   // Utility methods (Synchronous for simple checks)
   isConnected(): boolean {
-    return this.isConnected;
+    return this.isConnectedFlag;
   }
 
   getConfig(): RaceBoxConfig {
@@ -304,10 +302,8 @@ export class RaceBoxClientAdapter implements RaceBoxClientPort {
             this.positionSubject.next(liveData.position);
             this.motionSubject.next(liveData.motion);
           } else if (this.packetParser.isConfigurationMessage(data)) {
-            const config = this.packetParser.extractConfiguration(data);
             // Handle configuration updates
           } else if (this.packetParser.isAcknowledgmentMessage(data)) {
-            const ack = this.packetParser.extractAcknowledgment(data);
             // Handle acknowledgments
           }
           
@@ -337,7 +333,7 @@ export class RaceBoxClientAdapter implements RaceBoxClientPort {
     // Subscribe to BLE connection state changes
     this.bleDevice.connectionState$.pipe(
       map(state => {
-        this.isConnected = state.isConnected;
+        this.isConnectedFlag = state.isConnected;
         return state;
       })
     ).subscribe(state => {

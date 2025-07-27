@@ -51,7 +51,8 @@ export class PauseRecordingUseCase {
       };
     } catch (error) {
       const raceBoxError = this.errorHandler.handleDeviceError({
-        ...error,
+        message: error instanceof Error ? error.message : 'Pause recording failed',
+        code: 'PAUSE_FAILED',
         command: 'PauseRecording'
       });
 

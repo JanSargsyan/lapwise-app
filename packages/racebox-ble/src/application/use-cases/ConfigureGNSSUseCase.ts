@@ -47,7 +47,8 @@ export class ConfigureGNSSUseCase {
       };
     } catch (error) {
       const raceBoxError = this.errorHandler.handleDeviceError({
-        ...error,
+        message: error instanceof Error ? error.message : 'GNSS configuration failed',
+        code: (error as any)?.code || 'CONFIGURATION_FAILED',
         command: 'ConfigureGNSS',
         details: { config }
       });

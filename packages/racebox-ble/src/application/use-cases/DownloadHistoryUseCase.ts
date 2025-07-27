@@ -59,7 +59,8 @@ export class DownloadHistoryUseCase {
       };
     } catch (error) {
       const raceBoxError = this.errorHandler.handleDeviceError({
-        ...error,
+        message: error instanceof Error ? error.message : 'Download failed',
+        code: 'DOWNLOAD_FAILED',
         command: 'DownloadHistory',
         details: { startIndex, count }
       });
@@ -123,7 +124,6 @@ export class DownloadHistoryUseCase {
 
   // Alternative method for streaming download
   downloadHistoryStream(request: DownloadHistoryRequest): Observable<LiveDataMessage> {
-    const { startIndex = 0, count = 100 } = request;
     const subject = new Subject<LiveDataMessage>();
 
     this.execute(request).then(response => {

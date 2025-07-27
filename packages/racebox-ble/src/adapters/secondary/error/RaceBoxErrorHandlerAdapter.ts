@@ -221,7 +221,7 @@ export class RaceBoxErrorHandlerAdapter implements ErrorHandlerPort {
     };
   }
 
-  private getProtocolRecoveryStrategy(error: ProtocolError): RecoveryStrategy {
+  private getProtocolRecoveryStrategy(_error: ProtocolError): RecoveryStrategy {
     return {
       type: 'retry',
       maxAttempts: 2,
@@ -230,7 +230,7 @@ export class RaceBoxErrorHandlerAdapter implements ErrorHandlerPort {
     };
   }
 
-  private getDeviceRecoveryStrategy(error: DeviceError): RecoveryStrategy {
+  private getDeviceRecoveryStrategy(_error: DeviceError): RecoveryStrategy {
     return {
       type: 'reset',
       maxAttempts: 1,
@@ -259,7 +259,7 @@ export class RaceBoxErrorHandlerAdapter implements ErrorHandlerPort {
     };
   }
 
-  private getConfigurationRecoveryStrategy(error: ConfigurationError): RecoveryStrategy {
+  private getConfigurationRecoveryStrategy(_error: ConfigurationError): RecoveryStrategy {
     return {
       type: 'ignore',
       maxAttempts: 0,

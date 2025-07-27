@@ -8,7 +8,6 @@ import { PauseRecordingUseCase } from '../use-cases/PauseRecordingUseCase';
 import { DownloadHistoryUseCase } from '../use-cases/DownloadHistoryUseCase';
 import { GNSSConfiguration, RecordingConfiguration } from '../../domain/entities';
 import { LiveDataMessage } from '../../domain/entities/LiveDataMessage';
-import { RaceBoxError } from '../../domain/types/RaceBoxError';
 
 export interface DeviceControllerConfig {
   connectionTimeout?: number;
@@ -182,13 +181,9 @@ export class DeviceController {
       const response = await this.downloadHistoryUseCase.execute({
         startIndex,
         count,
-        timeoutMs: 30000,
+        timeoutMs: this.config.commandTimeout || 30000,
         progressCallback
       });
-
-      if (!response.success) {
-        throw new Error('Download failed');
-      }
 
       return response.data;
     } catch (error) {

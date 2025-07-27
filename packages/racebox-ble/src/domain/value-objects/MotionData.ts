@@ -1,7 +1,7 @@
-import { Speed } from './Speed';
-import { Heading } from './Heading';
-import { GForce } from './GForce';
-import { RotationRate } from './RotationRate';
+import { Speed, SpeedValueObject } from './Speed';
+import { Heading, HeadingValueObject } from './Heading';
+import { GForce, GForceValueObject } from './GForce';
+import { RotationRate, RotationRateValueObject } from './RotationRate';
 
 export interface MotionData {
   speed: Speed;
@@ -13,11 +13,11 @@ export interface MotionData {
 
 export class MotionDataValueObject {
   constructor(
-    public readonly speed: Speed,
-    public readonly heading: Heading,
-    public readonly gForce: GForce,
-    public readonly rotationRate: RotationRate,
-    public readonly timestamp: Date = new Date()
+    public readonly speed: SpeedValueObject,
+    public readonly heading: HeadingValueObject,
+    public readonly gForce: GForceValueObject,
+    public readonly rotationRate: RotationRateValueObject,
+    public readonly timestamp: Date
   ) {}
 
   public toInterface(): MotionData {
@@ -32,17 +32,19 @@ export class MotionDataValueObject {
 
   public static fromInterface(motionData: MotionData): MotionDataValueObject {
     return new MotionDataValueObject(
-      Speed.fromInterface(motionData.speed),
-      Heading.fromInterface(motionData.heading),
-      GForce.fromInterface(motionData.gForce),
-      RotationRate.fromInterface(motionData.rotationRate),
+      new SpeedValueObject(motionData.speed.value, motionData.speed.accuracy),
+      new HeadingValueObject(motionData.heading.value, motionData.heading.accuracy),
+      new GForceValueObject(motionData.gForce.x, motionData.gForce.y, motionData.gForce.z),
+      new RotationRateValueObject(motionData.rotationRate.x, motionData.rotationRate.y, motionData.rotationRate.z),
       motionData.timestamp
     );
   }
 
   public static fromRawData(
     speedRaw: number,
+    speedAccuracyRaw: number,
     headingRaw: number,
+    headingAccuracyRaw: number,
     gForceXRaw: number,
     gForceYRaw: number,
     gForceZRaw: number,
@@ -50,13 +52,18 @@ export class MotionDataValueObject {
     rotationRateYRaw: number,
     rotationRateZRaw: number
   ): MotionDataValueObject {
-    // Convert raw values
-    const speed = Speed.fromRawData(speedRaw);
-    const heading = Heading.fromRawData(headingRaw);
-    const gForce = GForce.fromRawData(gForceXRaw, gForceYRaw, gForceZRaw);
-    const rotationRate = RotationRate.fromRawData(rotationRateXRaw, rotationRateYRaw, rotationRateZRaw);
+    const speed = SpeedValueObject.fromRawData(speedRaw, speedAccuracyRaw);
+    const heading = HeadingValueObject.fromRawData(headingRaw, headingAccuracyRaw);
+    const gForce = GForceValueObject.fromRawData(gForceXRaw, gForceYRaw, gForceZRaw);
+    const rotationRate = RotationRateValueObject.fromRawData(rotationRateXRaw, rotationRateYRaw, rotationRateZRaw);
 
-    return new MotionDataValueObject(speed, heading, gForce, rotationRate);
+    return new MotionDataValueObject(
+      speed,
+      heading,
+      gForce,
+      rotationRate,
+      new Date()
+    );
   }
 
   public equals(other: MotionDataValueObject): boolean {
@@ -69,6 +76,6 @@ export class MotionDataValueObject {
   }
 
   public toString(): string {
-    return `Speed: ${this.speed.toString()}, Heading: ${this.heading.toString()}, G-Force: ${this.gForce.toString()}, Rotation: ${this.rotationRate.toString()}`;
+    return `MotionData(${this.speed.toString()}, ${this.heading.toString()}, ${this.gForce.toString()}, ${this.rotationRate.toString()})`;
   }
 } 

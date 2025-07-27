@@ -1,5 +1,5 @@
 import { Observable, Subject, BehaviorSubject } from 'rxjs';
-import { map, filter, share, distinctUntilChanged } from 'rxjs/operators';
+import { map, share, distinctUntilChanged } from 'rxjs/operators';
 import { BLEDevicePort } from '../../ports/secondary/BLEDevicePort';
 import { ErrorHandlerPort } from '../../ports/secondary/ErrorHandlerPort';
 import { DeviceController } from '../controllers/DeviceController';
@@ -51,7 +51,7 @@ export class DeviceManagementService {
 
   // State
   private reconnectAttempts = 0;
-  private reconnectTimer?: NodeJS.Timeout;
+  private reconnectTimer: NodeJS.Timeout | null = null;
   private lastDeviceId?: string;
 
   constructor(
@@ -120,7 +120,7 @@ export class DeviceManagementService {
       // Clear reconnect timer
       if (this.reconnectTimer) {
         clearTimeout(this.reconnectTimer);
-        this.reconnectTimer = undefined;
+        this.reconnectTimer = null;
       }
 
       this.updateDeviceStatus({
@@ -272,7 +272,7 @@ export class DeviceManagementService {
           // Device connected
           this.updateDeviceStatus({
             ...currentStatus,
-            isConnected: true,
+            isConnected: state.isConnected,
             deviceId: state.deviceId,
             signalStrength: state.signalStrength,
             lastSeen: state.lastSeen

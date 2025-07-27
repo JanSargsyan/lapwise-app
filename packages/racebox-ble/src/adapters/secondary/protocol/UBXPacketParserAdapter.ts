@@ -1,4 +1,4 @@
-import { PacketParserPort, RaceBoxMessage } from '../../ports/secondary/PacketParserPort';
+import { PacketParserPort, RaceBoxMessage } from '../../../ports/secondary/PacketParserPort';
 import { LiveDataMessage } from '../../../domain/entities/LiveDataMessage';
 
 export class UBXPacketParserAdapter implements PacketParserPort {
@@ -33,9 +33,7 @@ export class UBXPacketParserAdapter implements PacketParserPort {
 
     const dataView = new DataView(data.buffer, data.byteOffset, data.byteLength);
     
-    // Parse UBX header
-    const syncChar1 = dataView.getUint8(0);
-    const syncChar2 = dataView.getUint8(1);
+    // Parse UBX header (sync chars are validated but not used in parsing)
     const messageClass = dataView.getUint8(2);
     const messageId = dataView.getUint8(3);
     const payloadLength = dataView.getUint16(4, false); // Little-endian
@@ -76,8 +74,11 @@ export class UBXPacketParserAdapter implements PacketParserPort {
 
     // Calculate checksum over header (excluding sync chars) and payload
     for (let i = 2; i < UBXPacketParserAdapter.UBX_HEADER_LENGTH + payloadLength; i++) {
-      checksumA = (checksumA + packet[i]) & 0xFF;
-      checksumB = (checksumB + checksumA) & 0xFF;
+      const byte = packet[i];
+      if (byte !== undefined) {
+        checksumA = (checksumA + byte) & 0xFF;
+        checksumB = (checksumB + checksumA) & 0xFF;
+      }
     }
 
     // Get expected checksum
@@ -93,7 +94,11 @@ export class UBXPacketParserAdapter implements PacketParserPort {
     }
 
     if (fragments.length === 1) {
-      return fragments[0];
+      const fragment = fragments[0];
+      if (!fragment) {
+        throw new Error('Invalid fragment');
+      }
+      return fragment;
     }
 
     // Calculate total length
@@ -248,8 +253,9 @@ export class UBXPacketParserAdapter implements PacketParserPort {
         verticalAccuracy: accuracy
       },
       systemStatus: {
-        batteryLevel,
-        isCharging,
+        batteryLevel: batteryLevel,
+        batteryVoltage: batteryLevel * 0.1,
+        isCharging: isCharging,
         temperature: undefined
       },
       sensorData: {
@@ -300,8 +306,11 @@ export class UBXPacketParserAdapter implements PacketParserPort {
     let checksumB = 0;
 
     for (let i = 0; i < data.length; i++) {
-      checksumA = (checksumA + data[i]) & 0xFF;
-      checksumB = (checksumB + checksumA) & 0xFF;
+      const byte = data[i];
+      if (byte !== undefined) {
+        checksumA = (checksumA + byte) & 0xFF;
+        checksumB = (checksumB + checksumA) & 0xFF;
+      }
     }
 
     return [checksumA, checksumB];

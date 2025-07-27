@@ -88,7 +88,7 @@ export class RaceBoxDataConverterAdapter implements DataConverterPort {
       batteryLevel: raw.batteryLevel,
       batteryVoltage: raw.batteryLevel * 0.1, // Approximate voltage calculation
       isCharging: raw.isCharging,
-      temperature: raw.temperature
+      temperature: raw.temperature ?? undefined
     };
   }
 
@@ -96,7 +96,7 @@ export class RaceBoxDataConverterAdapter implements DataConverterPort {
     return {
       batteryLevel: system.batteryLevel,
       isCharging: system.isCharging,
-      temperature: system.temperature
+      temperature: system.temperature ?? undefined
     };
   }
 

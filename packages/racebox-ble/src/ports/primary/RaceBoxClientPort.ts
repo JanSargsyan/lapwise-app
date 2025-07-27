@@ -1,7 +1,10 @@
 import { Observable } from 'rxjs';
-import { LiveDataMessage, Position, MotionData, GNSSStatus, SystemStatus, SensorData } from '../../domain/entities';
+import { LiveDataMessage } from '../../domain/entities/LiveDataMessage';
+import { Position } from '../../domain/value-objects/Position';
+import { MotionData } from '../../domain/value-objects/MotionData';
+import { GNSSStatus } from '../../domain/value-objects/GNSSStatus';
 import { RecordingConfiguration, GNSSConfiguration } from '../../domain/entities';
-import { RaceBoxError } from '../../domain/types';
+import { RaceBoxError } from '../../domain/types/RaceBoxError';
 
 export interface DeviceInfo {
   id: string;
@@ -16,10 +19,10 @@ export interface DeviceInfo {
 export interface RecordingState {
   isRecording: boolean;
   isPaused: boolean;
+  duration?: number;
+  dataPoints?: number;
+  memoryLevel?: number;
   startTime?: Date;
-  duration: number; // seconds
-  dataPoints: number;
-  memoryLevel: number; // percentage
 }
 
 export interface ConnectionState {
@@ -30,15 +33,15 @@ export interface ConnectionState {
 }
 
 export interface MemoryStatus {
-  totalCapacity: number; // bytes
-  usedCapacity: number; // bytes
-  freeCapacity: number; // bytes
-  memoryLevel: number; // percentage
+  totalCapacity: number;
+  usedCapacity: number;
+  freeCapacity: number;
+  memoryLevel: number;
 }
 
 export interface RaceBoxConfig {
-  connectionTimeout: number; // milliseconds
-  commandTimeout: number; // milliseconds
+  connectionTimeout: number;
+  commandTimeout: number;
   retryAttempts: number;
   autoReconnect: boolean;
   dataBufferSize: number;
@@ -46,27 +49,27 @@ export interface RaceBoxConfig {
 
 export interface RaceBoxClientPort {
   // Data streams (RxJS for continuous data)
-  liveData$: Observable<LiveDataMessage>;
-  position$: Observable<Position>;
-  motion$: Observable<MotionData>;
-  deviceState$: Observable<ConnectionState>;
+  readonly liveData$: Observable<LiveDataMessage>;
+  readonly position$: Observable<Position>;
+  readonly motion$: Observable<MotionData>;
+  readonly deviceState$: Observable<ConnectionState>;
   
   // Historical data streams (RxJS for continuous updates)
-  historyData$: Observable<LiveDataMessage>;
-  recordingState$: Observable<RecordingState>;
-  downloadProgress$: Observable<number>;
+  readonly historyData$: Observable<LiveDataMessage>;
+  readonly recordingState$: Observable<RecordingState>;
+  readonly downloadProgress$: Observable<number>;
   
   // Configuration streams (RxJS for state changes)
-  deviceConfig$: Observable<DeviceInfo>;
-  recordingConfig$: Observable<RecordingConfiguration>;
-  gnssConfig$: Observable<GNSSConfiguration>;
+  readonly deviceConfig$: Observable<DeviceInfo>;
+  readonly recordingConfig$: Observable<RecordingConfiguration>;
+  readonly gnssConfig$: Observable<GNSSConfiguration>;
   
   // Error streams (RxJS for continuous error monitoring)
-  connectionErrors$: Observable<RaceBoxError>;
-  protocolErrors$: Observable<RaceBoxError>;
-  deviceErrors$: Observable<RaceBoxError>;
-  allErrors$: Observable<RaceBoxError>;
-  
+  readonly connectionErrors$: Observable<RaceBoxError>;
+  readonly protocolErrors$: Observable<RaceBoxError>;
+  readonly deviceErrors$: Observable<RaceBoxError>;
+  readonly allErrors$: Observable<RaceBoxError>;
+
   // Commands (Promises for one-time actions)
   configureGNSS(config: GNSSConfiguration): Promise<void>;
   configureRecording(config: RecordingConfiguration): Promise<void>;
@@ -76,14 +79,14 @@ export interface RaceBoxClientPort {
   downloadHistory(): Promise<LiveDataMessage[]>;
   eraseMemory(): Promise<void>;
   unlockMemory(securityCode: number): Promise<void>;
-  
+
   // State queries (Promises for one-time state checks)
   getConnectionState(): Promise<ConnectionState>;
   getDeviceInfo(): Promise<DeviceInfo>;
   getRecordingStatus(): Promise<RecordingState>;
   getGNSSStatus(): Promise<GNSSStatus>;
   getMemoryStatus(): Promise<MemoryStatus>;
-  
+
   // Utility methods (Synchronous for simple checks)
   isConnected(): boolean;
   getConfig(): RaceBoxConfig;
