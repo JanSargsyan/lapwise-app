@@ -3,6 +3,7 @@ import type { RecordingStatusPayload } from 'racebox-api/types';
 import type { Observable } from 'rxjs';
 import { DeviceInfo } from '@/src/domain/model/device/DeviceInfo';
 import { RecordingConfig } from '@/src/domain/model/racebox/RecordingConfig';
+import { RecordingStateChange } from '@/src/domain/model/racebox/RecordingState';
 
 // TODO update with domain models, Domain layer should not depend on racebox-api
 
@@ -10,6 +11,7 @@ export interface RaceBoxRepository {
   readRecordingConfig(address: string): Promise<RecordingConfig | null>;
   setRecordingConfig(address: string, config: RecordingConfig): Promise<boolean | null>;
   subscribeLiveData(address: string): Observable<DeviceData>;
+  subscribeStateChanges(address: string): Observable<RecordingStateChange>;
   readDeviceInfo(address: string): Promise<DeviceInfo>;
   getRecordingStatus(address: string): Promise<RecordingStatusPayload | null>;
   // Optionally add utility access if needed

@@ -6,6 +6,7 @@ import { container } from '@/src/application/di';
 import { Subscription } from 'rxjs';
 import { Device } from '@/src/domain/model/device/Device';
 import { BLEConnectionProps } from '@/src/domain/model/device/ConnectionType';
+import { RecordingState } from '@/src/domain/model/racebox/RecordingState';
 
 export default function RaceBoxScreen() {
   const params = useLocalSearchParams();
@@ -24,22 +25,52 @@ export default function RaceBoxScreen() {
   const address: string = (device.connectionProps as BLEConnectionProps)?.address ?? '';
   const [connected, setConnected] = useState(false);
   const [connecting, setConnecting] = useState(false);
-  const [recording, setRecording] = useState(false);
+  const [recordingState, setRecordingState] = useState<RecordingState>(RecordingState.STOPPED);
   const [recordingLoading, setRecordingLoading] = useState(false);
   const battery = '85%';
   const gps = 'Good';
-  console.log('device', device);
   const navigation = useNavigation();
   const router = useRouter();
 
+  // Observe connection state
   useFocusEffect(
     React.useCallback(() => {
-      let subscription: Subscription | undefined;
+      let connectionSubscription: Subscription | undefined;
+      let stateSubscription: Subscription | undefined;
+      
       if (address) {
-        subscription = container.ble.isBLEDeviceConnectedUseCase.execute(address).subscribe(setConnected);
+        // Always subscribe to connection state when screen is up
+        connectionSubscription = container.ble.isBLEDeviceConnectedUseCase.execute(address).subscribe((isConnected) => {
+          console.log('🔵 RaceBoxScreen: Connection state changed:', isConnected);
+          setConnected(isConnected);
+          
+          // Subscribe to state changes only when connected
+          if (isConnected) {
+            console.log('🟡 RaceBoxScreen: Device connected, subscribing to state changes');
+            stateSubscription = container.racebox.subscribeStateChangesUseCase.execute(address).subscribe({
+              next: (stateChange) => {
+                console.log('🟡 RaceBoxScreen: State change received:', stateChange);
+                setRecordingState(stateChange.state);
+              },
+              error: (error) => {
+                console.error('🔴 RaceBoxScreen: State change subscription error:', error);
+              }
+            });
+          } else {
+            // Unsubscribe when disconnected
+            if (stateSubscription) {
+              console.log('🟡 RaceBoxScreen: Device disconnected, unsubscribing from state changes');
+              stateSubscription.unsubscribe();
+              stateSubscription = undefined;
+            }
+            setRecordingState(RecordingState.STOPPED);
+          }
+        });
       }
+      
       return () => {
-        if (subscription) subscription.unsubscribe();
+        if (connectionSubscription) connectionSubscription.unsubscribe();
+        if (stateSubscription) stateSubscription.unsubscribe();
       };
     }, [address])
   );
@@ -48,11 +79,15 @@ export default function RaceBoxScreen() {
     setConnecting(true);
     try {
       if (connected) {
-        const success = await container.ble.disconnectFromDeviceUseCase.execute(address);
-        setConnected(!success); // confirm it works
+        await container.ble.disconnectFromDeviceUseCase.execute(address);
       } else {
         const success = await container.ble.connectToBLEDeviceUseCase.execute(address);
-        setConnected(success);
+        if (success) {
+          // If connection was successful, immediately set connected state
+          // to prevent the subscription from being cancelled
+          setConnected(true);
+          console.log('🔵 RaceBoxScreen: Connection successful, setting connected state to true');
+        }
       }
     } catch {
       Alert.alert('Error', connected ? 'Failed to disconnect.' : 'Failed to connect.');
@@ -95,10 +130,9 @@ export default function RaceBoxScreen() {
 
     setRecordingLoading(true);
     try {
-      if (recording) {
+      if (recordingState === RecordingState.RECORDING) {
         const result = await container.racebox.stopRecordingUseCase.execute(address);
         if (result) {
-          setRecording(false);
           Alert.alert('Success', 'Recording stopped!');
         } else {
           Alert.alert('Error', 'Failed to stop recording.');
@@ -106,14 +140,13 @@ export default function RaceBoxScreen() {
       } else {
         const result = await container.racebox.startRecordingUseCase.execute(address);
         if (result) {
-          setRecording(true);
           Alert.alert('Success', 'Recording started!');
         } else {
           Alert.alert('Error', 'Failed to start recording.');
         }
       }
     } catch (error) {
-      Alert.alert('Error', `Failed to ${recording ? 'stop' : 'start'} recording: ${error}`);
+      Alert.alert('Error', `Failed to ${recordingState === RecordingState.RECORDING ? 'stop' : 'start'} recording: ${error}`);
     } finally {
       setRecordingLoading(false);
     }
@@ -143,7 +176,10 @@ export default function RaceBoxScreen() {
         {/* Status */}
         <View style={styles.statusBox}>
           <Text style={styles.statusLabel}>Status: <Text style={[styles.statusValue, { color: connected ? 'green' : 'red' }]}>{connected ? 'Connected' : 'Disconnected'}</Text></Text>
-          <Text style={styles.statusLabel}>Recording: <Text style={styles.statusValue}>{recording ? 'Recording' : 'Not Recording'}</Text></Text>
+          <Text style={styles.statusLabel}>Recording: <Text style={[styles.statusValue, { color: recordingState === RecordingState.RECORDING ? 'red' : 'gray' }]}>
+            {recordingState === RecordingState.RECORDING ? 'Recording' : 
+             recordingState === RecordingState.PAUSED ? 'Paused' : 'Not Recording'}
+          </Text></Text>
           <Text style={styles.statusLabel}>Battery: <Text style={styles.statusValue}>{battery}</Text></Text>
           <Text style={styles.statusLabel}>GPS: <Text style={styles.statusValue}>{gps}</Text></Text>
         </View>
@@ -156,7 +192,12 @@ export default function RaceBoxScreen() {
             disabled={connecting}
           >
             <Ionicons name={connected ? 'close-circle-outline' : 'link-outline'} size={20} color="#fff" />
-            <Text style={styles.actionButtonText}>{connecting ? (connected ? 'Disconnecting...' : 'Connecting...') : (connected ? 'Disconnect' : 'Connect')}</Text>
+            <Text style={styles.actionButtonText}>
+              {connecting 
+                ? (connected ? 'Disconnecting...' : 'Connecting...') 
+                : (connected ? 'Disconnect' : 'Connect')
+              }
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -164,12 +205,16 @@ export default function RaceBoxScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Standalone Recording</Text>
           <View style={styles.verticalButtonStack}>
-            <TouchableOpacity style={[styles.actionButton, styles.primary]} onPress={handleRecordingToggle} disabled={recordingLoading}>
-              <Ionicons name={recording ? 'stop-circle-outline' : 'play-circle-outline'} size={20} color="#fff" />
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.primary]} 
+              onPress={handleRecordingToggle} 
+              disabled={recordingLoading || !connected}
+            >
+              <Ionicons name={recordingState === RecordingState.RECORDING ? 'stop-circle-outline' : 'play-circle-outline'} size={20} color="#fff" />
               <Text style={styles.actionButtonText}>
                 {recordingLoading 
-                  ? (recording ? 'Stopping...' : 'Starting...') 
-                  : (recording ? 'Stop Recording' : 'Start Recording')
+                  ? (recordingState === RecordingState.RECORDING ? 'Stopping...' : 'Starting...') 
+                  : (recordingState === RecordingState.RECORDING ? 'Stop Recording' : 'Start Recording')
                 }
               </Text>
             </TouchableOpacity>

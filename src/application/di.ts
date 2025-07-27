@@ -15,6 +15,7 @@ import { ReadRecordingConfigUseCase } from '@/src/usecase/racebox/ReadRecordingC
 import { SetRecordingConfigUseCase } from '@/src/usecase/racebox/SetRecordingConfigUseCase';
 import { StartRecordingUseCase } from '@/src/usecase/racebox/StartRecordingUseCase';
 import { StopRecordingUseCase } from '@/src/usecase/racebox/StopRecordingUseCase';
+import { SubscribeStateChangesUseCase } from '@/src/usecase/racebox/SubscribeStateChangesUseCase';
 
 const btManager = new BleManager();
 
@@ -37,6 +38,7 @@ const readRecordingConfigUseCase = new ReadRecordingConfigUseCase(raceBoxReposit
 const setRecordingConfigUseCase = new SetRecordingConfigUseCase(raceBoxRepository);
 const startRecordingUseCase = new StartRecordingUseCase(raceBoxRepository);
 const stopRecordingUseCase = new StopRecordingUseCase(raceBoxRepository);
+const subscribeStateChangesUseCase = new SubscribeStateChangesUseCase(raceBoxRepository);
 
 export const container = {
     ble: {
@@ -55,6 +57,7 @@ export const container = {
         readRecordingConfigUseCase: readRecordingConfigUseCase,
         setRecordingConfigUseCase: setRecordingConfigUseCase,
         startRecordingUseCase: startRecordingUseCase,
-        stopRecordingUseCase: stopRecordingUseCase
+        stopRecordingUseCase: stopRecordingUseCase,
+        subscribeStateChangesUseCase: subscribeStateChangesUseCase
     }
 }

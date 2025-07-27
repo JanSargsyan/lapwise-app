@@ -1,6 +1,7 @@
 import { RaceBoxApi } from 'racebox-api';
-import type { RecordingStatusPayload, RaceBoxLiveData } from 'racebox-api/types';
+import type { RecordingStatusPayload, RaceBoxLiveData, StateChangePayload } from 'racebox-api/types';
 import { mapRaceBoxLiveDataToDeviceData } from '@/src/data/mapper/LiveDataMapper';
+import { mapStateChangePayloadToDomain } from '@/src/data/mapper/RecordingStateMapper';
 import type { DeviceData } from '@/src/domain/model/livedata/DeviceData';
 import { Observable } from 'rxjs';
 import { DeviceInfo } from '@/src/domain/model/device/DeviceInfo';
@@ -8,6 +9,7 @@ import { RecordingConfig } from '@/src/domain/model/racebox/RecordingConfig';
 import { RaceBoxRepository } from '@/src/domain/repository/RaceBoxRepository';
 import { mapRecordingConfigPayloadToDomain, mapRecordingConfigDomainToPayload } from '@/src/data/mapper/RecordingConfigMapper';
 import { BleManager } from 'react-native-ble-plx';
+import { RecordingStateChange } from '@/src/domain/model/racebox/RecordingState';
 
 export class RaceBoxRepositoryImpl implements RaceBoxRepository {
   private apiCache = new Map<string, RaceBoxApi>();
@@ -69,6 +71,25 @@ export class RaceBoxRepositoryImpl implements RaceBoxRepository {
           const api = await this.getApi(address);
           unsub = api.subscribeLiveData((live: RaceBoxLiveData) => {
             subscriber.next(mapRaceBoxLiveDataToDeviceData(live));
+          });
+        } catch (e) {
+          subscriber.error(e);
+        }
+      })();
+      return () => {
+        if (unsub) unsub();
+      };
+    });
+  }
+
+  subscribeStateChanges(address: string): Observable<RecordingStateChange> {
+    return new Observable<RecordingStateChange>(subscriber => {
+      let unsub: (() => void) | undefined;
+      (async () => {
+        try {
+          const api = await this.getApi(address);
+          unsub = api.subscribeStateChanges((stateChange: StateChangePayload) => {
+            subscriber.next(mapStateChangePayloadToDomain(stateChange));
           });
         } catch (e) {
           subscriber.error(e);
