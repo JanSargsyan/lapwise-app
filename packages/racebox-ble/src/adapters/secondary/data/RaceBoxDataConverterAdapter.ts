@@ -1,5 +1,5 @@
 import { DataConverterPort, RawPosition, RawMotion, RawGNSS, RawSystem, RawRecordingStatus, RawMemoryStatus } from '../../../ports/secondary/DataConverterPort';
-import { Position, MotionData, GNSSStatus, SystemStatus, SensorData } from '../../../domain/value-objects';
+import { Position, MotionData, GNSSStatus, SystemStatus, SensorData, RecordingStatus, MemoryStatus } from '../../../domain/value-objects';
 import { FixStatus } from '../../../domain/types/FixStatus';
 
 export class RaceBoxDataConverterAdapter implements DataConverterPort {
@@ -131,7 +131,7 @@ export class RaceBoxDataConverterAdapter implements DataConverterPort {
   }
 
   // Status conversion
-  convertRawRecordingStatus(raw: RawRecordingStatus): any {
+  convertRawRecordingStatus(raw: RawRecordingStatus): RecordingStatus {
     return {
       isRecording: raw.isRecording,
       isPaused: raw.isPaused,
@@ -142,7 +142,7 @@ export class RaceBoxDataConverterAdapter implements DataConverterPort {
     };
   }
 
-  convertRawMemoryStatus(raw: RawMemoryStatus): any {
+  convertRawMemoryStatus(raw: RawMemoryStatus): MemoryStatus {
     return {
       totalCapacity: raw.totalCapacity, // Already in bytes
       usedCapacity: raw.usedCapacity, // Already in bytes

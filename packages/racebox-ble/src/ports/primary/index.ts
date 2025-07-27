@@ -1,1 +1,2 @@
-export * from './RaceBoxClientPort'; 
+export * from './RaceBoxClientPort';
+export * from './RaceBoxMessageHandlerPort'; 

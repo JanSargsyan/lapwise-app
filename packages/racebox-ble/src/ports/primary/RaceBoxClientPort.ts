@@ -1,8 +1,9 @@
 import { Observable } from 'rxjs';
-import { LiveDataMessage } from '../../domain/entities/LiveDataMessage';
+import { LiveDataMessage, HistoryDataMessage } from '../../domain/entities';
 import { Position } from '../../domain/value-objects/Position';
 import { MotionData } from '../../domain/value-objects/MotionData';
 import { GNSSStatus } from '../../domain/value-objects/GNSSStatus';
+import { MemoryStatus } from '../../domain/value-objects/MemoryStatus';
 import { RecordingConfiguration, GNSSConfiguration } from '../../domain/entities';
 import { RaceBoxError } from '../../domain/types/RaceBoxError';
 
@@ -32,13 +33,6 @@ export interface ConnectionState {
   lastSeen?: Date;
 }
 
-export interface MemoryStatus {
-  totalCapacity: number;
-  usedCapacity: number;
-  freeCapacity: number;
-  memoryLevel: number;
-}
-
 export interface RaceBoxConfig {
   connectionTimeout: number;
   commandTimeout: number;
@@ -53,6 +47,7 @@ export interface RaceBoxClientPort {
   readonly position$: Observable<Position>;
   readonly motion$: Observable<MotionData>;
   readonly deviceState$: Observable<ConnectionState>;
+  readonly gnssState$: Observable<GNSSStatus>;
   
   // Historical data streams (RxJS for continuous updates)
   readonly historyData$: Observable<LiveDataMessage>;
@@ -76,7 +71,7 @@ export interface RaceBoxClientPort {
   startRecording(): Promise<void>;
   stopRecording(): Promise<void>;
   pauseRecording(): Promise<void>;
-  downloadHistory(): Promise<LiveDataMessage[]>;
+  downloadHistory(): Promise<HistoryDataMessage[]>;
   eraseMemory(): Promise<void>;
   unlockMemory(securityCode: number): Promise<void>;
 

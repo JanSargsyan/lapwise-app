@@ -1,13 +1,14 @@
 import { Observable, Subject, merge, throwError } from 'rxjs';
 import { map, catchError, share } from 'rxjs/operators';
-import { RaceBoxClientPort, DeviceInfo, RecordingState, ConnectionState, MemoryStatus, RaceBoxConfig } from '../../ports/primary/RaceBoxClientPort';
+import { RaceBoxClientPort, DeviceInfo, RecordingState, ConnectionState, RaceBoxConfig } from '../../ports/primary/RaceBoxClientPort';
 import { BLEDevicePort } from '../../ports/secondary/BLEDevicePort';
 import { PacketParserPort } from '../../ports/secondary/PacketParserPort';
 import { MessageFactoryPort } from '../../ports/secondary/MessageFactoryPort';
 import { ErrorHandlerPort } from '../../ports/secondary/ErrorHandlerPort';
-import { LiveDataMessage, RecordingConfiguration, GNSSConfiguration } from '../../domain/entities';
+import { LiveDataMessage, RecordingConfiguration, GNSSConfiguration, HistoryDataMessage } from '../../domain/entities';
 import { Position, MotionData, GNSSStatus } from '../../domain/value-objects';
 import { RaceBoxError } from '../../domain/types/RaceBoxError';
+import { MemoryStatus } from '../../domain/value-objects/MemoryStatus';
 
 export class RaceBoxClientAdapter implements RaceBoxClientPort {
   // Data streams (RxJS for continuous data)
@@ -15,6 +16,7 @@ export class RaceBoxClientAdapter implements RaceBoxClientPort {
   public readonly position$: Observable<Position>;
   public readonly motion$: Observable<MotionData>;
   public readonly deviceState$: Observable<ConnectionState>;
+  public readonly gnssState$: Observable<GNSSStatus>;
   
   // Historical data streams (RxJS for continuous updates)
   public readonly historyData$: Observable<LiveDataMessage>;
@@ -37,6 +39,7 @@ export class RaceBoxClientAdapter implements RaceBoxClientPort {
   private readonly positionSubject = new Subject<Position>();
   private readonly motionSubject = new Subject<MotionData>();
   private readonly deviceStateSubject = new Subject<ConnectionState>();
+  private readonly gnssStateSubject = new Subject<GNSSStatus>();
   private readonly historyDataSubject = new Subject<LiveDataMessage>();
   private readonly recordingStateSubject = new Subject<RecordingState>();
   private readonly downloadProgressSubject = new Subject<number>();
@@ -77,6 +80,7 @@ export class RaceBoxClientAdapter implements RaceBoxClientPort {
     this.position$ = this.positionSubject.asObservable().pipe(share());
     this.motion$ = this.motionSubject.asObservable().pipe(share());
     this.deviceState$ = this.deviceStateSubject.asObservable().pipe(share());
+    this.gnssState$ = this.gnssStateSubject.asObservable().pipe(share());
     this.historyData$ = this.historyDataSubject.asObservable().pipe(share());
     this.recordingState$ = this.recordingStateSubject.asObservable().pipe(share());
     this.downloadProgress$ = this.downloadProgressSubject.asObservable().pipe(share());
@@ -179,14 +183,14 @@ export class RaceBoxClientAdapter implements RaceBoxClientPort {
     }
   }
 
-  async downloadHistory(): Promise<LiveDataMessage[]> {
+  async downloadHistory(): Promise<HistoryDataMessage[]> {
     try {
       const message = this.messageFactory.createDownloadHistoryCommand();
       const packet = this.messageFactory.messageToPacket(message);
       await this.bleDevice.sendData(packet);
       
-      // This would typically involve waiting for multiple packets
-      // For now, return an empty array
+      // In a real implementation, this would collect history data from the device
+      // For now, return empty array
       return [];
     } catch (error) {
       const raceBoxError = this.errorHandler.handleDeviceError(error);

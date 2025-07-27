@@ -1,4 +1,5 @@
 import { Position, MotionData, GNSSStatus, SystemStatus, SensorData } from '../../domain/value-objects';
+import { RecordingStatus, MemoryStatus } from '../../domain/value-objects';
 
 export interface RawPosition {
   latitude: number;
@@ -70,8 +71,8 @@ export interface DataConverterPort {
   convertSensorDataToRaw(sensor: SensorData): RawMotion;
   
   // Status conversion
-  convertRawRecordingStatus(raw: RawRecordingStatus): any;
-  convertRawMemoryStatus(raw: RawMemoryStatus): any;
+  convertRawRecordingStatus(raw: RawRecordingStatus): RecordingStatus;
+  convertRawMemoryStatus(raw: RawMemoryStatus): MemoryStatus;
   
   // Utility methods
   validateRawData(raw: any): boolean;
